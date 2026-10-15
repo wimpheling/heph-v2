@@ -1,0 +1,32 @@
+{
+  "name": "heph-v2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "pnpm --filter @heph/web dev",
+    "dev:server": "cargo run -p heph-server",
+    "generate": "buf generate",
+    "check": "vp check && pnpm typecheck && buf lint && cargo fmt --all --check && cargo fmt --manifest-path tools/dylint/Cargo.toml --check && cargo clippy --workspace --all-targets -- -D warnings && cargo dylint --all -- --workspace --all-targets",
+    "typecheck": "pnpm --filter @heph/web exec tsc -b && tsc -p packages/design-system/tsconfig.json && pnpm --filter @heph/e2e typecheck",
+    "test": "node --test tools/oxlint/*.test.mjs && cargo test --workspace",
+    "build": "pnpm --filter @heph/web build && cargo build --workspace --locked",
+    "lint:rust": "cargo dylint --all -- --workspace --all-targets",
+    "test:rust-lints": "cd tools/dylint && cargo test --locked",
+    "fmt": "vp fmt && cargo fmt --all && cargo fmt --manifest-path tools/dylint/Cargo.toml",
+    "test:e2e": "pnpm --filter @heph/e2e test",
+    "test:e2e:ui": "pnpm --filter @heph/e2e test:ui"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
+    "@bufbuild/protoc-gen-es": "^2.16.0",
+    "@types/node": "^24.13.3",
+    "typescript": "~6.0.2",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@12.11.2"
+}

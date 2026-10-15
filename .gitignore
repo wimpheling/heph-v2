@@ -1,0 +1,12 @@
+/target/
+**/node_modules/
+**/dist/
+**/*.tsbuildinfo
+.vite/
+.env
+.env.*
+!.env.example
+/tools/dylint/target/
+**/playwright-report/
+**/test-results/
+**/blob-report/

@@ -1,0 +1,87 @@
+@import "@astryxdesign/core/reset.css";
+@import "@astryxdesign/core/astryx.css";
+@import "@astryxdesign/theme-neutral/theme.css";
+
+:root {
+  font-family: var(--font-family-body, system-ui, sans-serif);
+  color: var(--color-text-primary, #202124);
+  background: var(--color-background-body, #f6f7f8);
+}
+body {
+  margin: 0;
+}
+.heph-app {
+  min-height: 100vh;
+}
+.heph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--color-border, #e1e4e8);
+}
+.heph-brand {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+.heph-version,
+.heph-header-label {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #60646c);
+}
+.heph-main {
+  max-width: 48rem;
+  margin: 4rem auto;
+  padding: 0 1.5rem;
+}
+.heph-panel {
+  background: var(--color-background-surface, #fff);
+  border: 1px solid var(--color-border, #e1e4e8);
+  border-radius: var(--radius-container, 12px);
+  padding: clamp(1.5rem, 5vw, 3rem);
+}
+.heph-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.25rem;
+}
+.heph-heading {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+.heph-text {
+  color: var(--color-text-secondary, #60646c);
+  line-height: 1.6;
+  margin: 0;
+}
+.heph-status {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.heph-status-neutral {
+  color: var(--color-text-secondary, #60646c);
+}
+.heph-status-success {
+  color: var(--color-text-success, #247849);
+}
+.heph-status-error {
+  color: var(--color-text-error, #b42318);
+}
+@media (max-width: 480px) {
+  .heph-header {
+    padding: 1rem;
+    flex-wrap: wrap;
+  }
+  .heph-main {
+    margin: 2rem auto;
+  }
+}

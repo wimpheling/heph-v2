@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package heph.system.v1;
+
+// Bootstrap contract. Forge and runtime APIs will get their own packages.
+service SystemService {
+  rpc GetSystemInfo(GetSystemInfoRequest) returns (GetSystemInfoResponse);
+}
+
+message GetSystemInfoRequest {}
+
+message GetSystemInfoResponse {
+  string name = 1;
+  string version = 2;
+}
