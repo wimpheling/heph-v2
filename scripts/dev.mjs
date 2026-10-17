@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 
 const windows = process.platform === "win32";
 const children = [
-  spawn("cargo", ["run", "-p", "heph-server"], { stdio: "inherit", detached: !windows }),
+  spawn("go", ["run", "./cmd/heph"], { stdio: "inherit", detached: !windows }),
   spawn(windows ? "pnpm.cmd" : "pnpm", ["--filter", "@heph/web", "dev"], {
     stdio: "inherit",
     detached: !windows,

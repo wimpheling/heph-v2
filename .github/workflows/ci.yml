@@ -14,21 +14,18 @@ jobs:
           node-version-file: .node-version
       - name: Install pnpm
         run: npm install --global pnpm@12.11.2
-      - name: Install Rust
-        run: rustup show
-      - name: Install Dylint toolchain
-        run: rustup toolchain install nightly-2026-04-16 --profile minimal --component rustc-dev --component llvm-tools-preview
-      - name: Install protobuf compiler
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
-      - uses: Swatinem/rust-cache@v2
-      - name: Install Dylint
-        run: cargo install cargo-dylint dylint-link --version 6.0.0 --locked
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - run: go mod download
       - run: pnpm install --frozen-lockfile
       - name: Check generated bindings
-        run: pnpm generate && git diff --exit-code -- packages/contracts/src/gen
+        run: |
+          pnpm generate
+          git diff --exit-code -- gen packages/contracts/src/gen
+          test -z "$(git ls-files --others --exclude-standard -- gen packages/contracts/src/gen)"
       - run: pnpm check
       - run: pnpm test
-      - run: pnpm test:rust-lints
       - run: pnpm build
       - name: Install Playwright browser
         run: pnpm --filter @heph/e2e exec playwright install --with-deps chromium

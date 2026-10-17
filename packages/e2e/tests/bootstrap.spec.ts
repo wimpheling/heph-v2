@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 const systemInfoPath = "/rpc/heph.system.v1.SystemService/GetSystemInfo";
-const connectionMessage = /Connecting to the Rust server|Connected to heph-v2|Server unavailable/;
+const connectionMessage = /Connecting to the server|Connected to heph-v2|Server unavailable/;
 const connected = /^Connected to heph-v2 · v\d+\.\d+\.\d+/;
 
-test("connects to Rust and checks the connection again", async ({ page }) => {
+test("connects to Go and checks the connection again", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle("heph-v2 · Git forge + agent runtime");
@@ -41,11 +41,11 @@ test("shows pending and unavailable states, then recovers on retry", async ({ pa
   await page.goto("/");
   const status = page.getByRole("status").filter({ hasText: connectionMessage });
   const retry = page.getByRole("button", { name: "Check connection" });
-  await expect(status).toHaveText("Connecting to the Rust server…");
+  await expect(status).toHaveText("Connecting to the server…");
   await expect(retry).toBeDisabled();
 
   failure.resolve();
-  await expect(status).toHaveText("Server unavailable. Start the Rust server and retry.");
+  await expect(status).toHaveText("Server unavailable. Start the server and retry.");
   await expect(retry).toBeEnabled();
 
   await page.unrouteAll({ behavior: "wait" });

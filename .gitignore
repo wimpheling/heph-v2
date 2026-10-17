@@ -1,4 +1,4 @@
-/target/
+/bin/
 **/node_modules/
 **/dist/
 **/*.tsbuildinfo
@@ -6,7 +6,6 @@
 .env
 .env.*
 !.env.example
-/tools/dylint/target/
 **/playwright-report/
 **/test-results/
 **/blob-report/

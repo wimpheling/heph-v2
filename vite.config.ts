@@ -1,7 +1,7 @@
 import { defineConfig } from "vite-plus";
 
 export default defineConfig({
-  fmt: { ignorePatterns: ["packages/contracts/src/gen/**", "**/Cargo.lock", "docs/**"] },
+  fmt: { ignorePatterns: ["packages/contracts/src/gen/**", "docs/**"] },
   lint: {
     plugins: ["react", "typescript", "oxc"],
     ignorePatterns: ["packages/contracts/src/gen/**", "tools/oxlint/fixtures/**"],

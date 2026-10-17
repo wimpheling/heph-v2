@@ -45,8 +45,8 @@ export function App() {
             {connection.state === "connected"
               ? `Connected to ${connection.name} · v${connection.version}`
               : connection.state === "unavailable"
-                ? "Server unavailable. Start the Rust server and retry."
-                : "Connecting to the Rust server…"}
+                ? "Server unavailable. Start the server and retry."
+                : "Connecting to the server…"}
           </Status>
           <Button
             label="Check connection"
