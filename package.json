@@ -5,17 +5,18 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:web": "pnpm --filter @heph/web dev",
-    "dev:server": "cargo run -p heph-server",
+    "dev:server": "go run ./cmd/heph",
     "generate": "buf generate",
-    "check": "vp check && pnpm typecheck && buf lint && cargo fmt --all --check && cargo fmt --manifest-path tools/dylint/Cargo.toml --check && cargo clippy --workspace --all-targets -- -D warnings && cargo dylint --all -- --workspace --all-targets",
+    "check": "vp check && pnpm typecheck && buf lint && pnpm check:go",
     "typecheck": "pnpm --filter @heph/web exec tsc -b && tsc -p packages/design-system/tsconfig.json && pnpm --filter @heph/e2e typecheck",
-    "test": "node --test tools/oxlint/*.test.mjs && cargo test --workspace",
-    "build": "pnpm --filter @heph/web build && cargo build --workspace --locked",
-    "lint:rust": "cargo dylint --all -- --workspace --all-targets",
-    "test:rust-lints": "cd tools/dylint && cargo test --locked",
-    "fmt": "vp fmt && cargo fmt --all && cargo fmt --manifest-path tools/dylint/Cargo.toml",
+    "test": "node --test tools/oxlint/*.test.mjs && go test -race ./...",
+    "build": "pnpm --filter @heph/web build && go build -o bin/heph ./cmd/heph",
+    "fmt": "vp fmt && node scripts/go-fmt.mjs --write",
     "test:e2e": "pnpm --filter @heph/e2e test",
-    "test:e2e:ui": "pnpm --filter @heph/e2e test:ui"
+    "test:e2e:ui": "pnpm --filter @heph/e2e test:ui",
+    "check:go": "node scripts/go-fmt.mjs && go vet ./... && pnpm lint:go",
+    "lint:go": "go run ./tools/go-lint/cmd/hephlint ./...",
+    "test:go-lints": "go test ./tools/go-lint/..."
   },
   "devDependencies": {
     "@bufbuild/buf": "^1.73.0",

@@ -1,0 +1,14 @@
+package architecture
+
+import (
+	"testing"
+
+	"golang.org/x/tools/go/analysis/analysistest"
+)
+
+func TestBoundaries(t *testing.T) {
+	analysistest.Run(t, analysistest.TestData(), Analyzer,
+		"badenv", "allowed", "config", "rpc",
+		module+"/internal/core", module+"/internal/core/nested",
+	)
+}

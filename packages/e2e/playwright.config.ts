@@ -22,8 +22,8 @@ export default defineConfig({
   ],
   webServer: [
     {
-      name: "Rust server",
-      command: "cargo run --locked -p heph-server",
+      name: "Go server",
+      command: "go run ./cmd/heph",
       cwd: root,
       env: { HEPH_LISTEN_ADDR: "127.0.0.1:18080" },
       // The listener is bound before the server emits this startup message.
