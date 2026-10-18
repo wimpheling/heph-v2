@@ -187,6 +187,20 @@ func checkArchitecture(pass *analysis.Pass) {
 				if inDomain && n.Tok != token.ASSIGN && n.Tok != token.DEFINE {
 					pass.Reportf(node.Pos(), "domain computations belong in approved services")
 				}
+				if inDomain {
+					for _, target := range n.Lhs {
+						local := false
+						if id, ok := target.(*ast.Ident); ok {
+							local = true
+							if variable, ok := pass.TypesInfo.Uses[id].(*types.Var); ok && variable.Pkg() != nil && variable.Parent() == variable.Pkg().Scope() {
+								local = false
+							}
+						}
+						if !local {
+							pass.Reportf(target.Pos(), "domain assignments must target local variables; use typed result construction and service calls")
+						}
+					}
+				}
 			case *ast.IndexExpr:
 				if inDomain && function(pass, n) == nil && !pass.TypesInfo.Types[n].IsType() {
 					pass.Reportf(node.Pos(), "domain computations belong in approved services")

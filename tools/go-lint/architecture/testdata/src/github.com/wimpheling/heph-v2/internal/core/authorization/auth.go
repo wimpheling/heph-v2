@@ -21,6 +21,9 @@ type ListInput struct {
 	Count            int
 	Name             string
 }
+
+var Shared ListInput
+
 type Service struct{}
 
 func (*Service) Get(context.Context, ListInput) (int, error)                       { return 1, nil }

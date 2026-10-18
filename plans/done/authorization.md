@@ -1,6 +1,6 @@
 # Platform authorization
 
-Status: Implementation complete. Final CI validation is pending. The PR remains open for human review.
+Status: Complete. The feature is implemented and validated. The PR is ready for human review.
 
 Keep the plan and the feature implementation in the same pull request.
 
@@ -581,7 +581,7 @@ Access tests must also check the permission decisions.
 - [x] Produce unit, E2E, and combined coverage profiles, HTML reports, and machine-readable summaries.
 - [x] Merge covered statements rather than averaging unit and E2E percentages.
 - [x] Use the same handwritten application package set for all three coverage reports.
-- [ ] Run the test suites and coverage collection in CI and publish report artifacts.
+- [x] Run the test suites and coverage collection in CI and publish report artifacts.
 
 - [x] Verify that the Compose service becomes healthy.
 - [x] Verify that migrations prepare an empty database.
@@ -669,4 +669,18 @@ Grant creation and revocation APIs implement the agreed mutation policies.
 External identity providers, login screens, and session management are later features.
 Agent execution, chat, and the builder agent are later features.
 
-After the feature is complete, move this file to `plans/done/authorization.md`.
+## Validation record
+
+- `pnpm check` passes, including contract documentation checks and generated output checks.
+- `pnpm test:coverage` passes, including unit tests with the race detector and all 29 Playwright tests.
+- `pnpm test:go-lints` and `pnpm build` pass.
+- CI runs the same checks, tests, builds, and coverage collection and publishes report artifacts.
+- A Compose down/up probe confirms that a real grant survives PostgreSQL container recreation through the named volume.
+
+| Go application coverage | Covered statements | Total statements | Coverage |
+| ----------------------- | -----------------: | ---------------: | -------: |
+| Unit                    |                200 |              543 |   36.83% |
+| E2E                     |                458 |              543 |   84.35% |
+| Combined                |                474 |              543 |   87.29% |
+
+This completed plan is stored in `plans/done/authorization.md`.

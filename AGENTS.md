@@ -23,6 +23,7 @@ Keep core use-case orchestration restricted and readable as business policy. Dom
 - Use `if` / `else` for business branching. Put value-based switches, iteration, and algorithms behind approved domain operations or ports rather than implementing them in orchestration.
 - Allow ordinary Go error handling as an explicit exception: `err == nil`, `err != nil`, error propagation, and `errors.Is` / `errors.As`. Do not replace idiomatic errors with success booleans to satisfy this guideline. Other helper calls require explicit approval in the call allowlist.
 - Allow local bindings, field access, argument passing, and construction and return of typed core inputs and results. HTTP and ConnectRPC response construction stays in the RPC adapters.
+- Domain assignments target local variables. Construct typed results instead of writing fields, and route effects through services and ports. Mutable domain package globals and `init` functions are prohibited.
 - Side effects go through declared ports. Use cases must not directly access files, databases, the network, environment variables, or process execution.
 - Keep meaningful predicates and computations in independently testable domain operations; avoid creating arbitrary helper services solely to bypass the restrictions.
 

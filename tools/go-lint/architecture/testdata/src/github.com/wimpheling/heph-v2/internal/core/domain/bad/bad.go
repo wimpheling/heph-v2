@@ -66,6 +66,11 @@ var fake = op.Operation[a.ListInput, int]{} // want "construct operations and po
 
 func init() {} // want "unguarded initialization"
 
+func globalWrite(input a.ListInput) {
+	a.Shared = input   // want "domain assignments must target local variables"
+	a.Shared.Count = 3 // want "domain assignments must target local variables"
+}
+
 func namedServiceIsNotApproved(service unapproved.Service) {
 	service.Get() // want "domain calls require"
 }
