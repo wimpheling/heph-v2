@@ -7,6 +7,13 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # All test configuration is explicit. Application code has no env defaults.
+    env:
+      HEPH_E2E_DATABASE_URL: postgresql://heph:heph-local-placeholder@127.0.0.1:5432/heph?sslmode=disable
+      HEPH_E2E_BASE_URL: http://127.0.0.1:18080
+      HEPH_E2E_WEB_URL: http://127.0.0.1:15173
+      HEPH_E2E_API_ONLY: "0"
+      HEPH_E2E_MANAGED: "1"
     services:
       postgres:
         image: postgres:18.3-alpine

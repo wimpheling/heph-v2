@@ -1,13 +1,16 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
-import { randomUUID } from "node:crypto";
+import { booleanEnv, requiredEnv } from "../../scripts/environment.mjs";
 
-process.env.HEPH_E2E_SCHEMA ??= "e2e_" + randomUUID().replaceAll("-", "");
-const apiURL = process.env.HEPH_E2E_BASE_URL ?? "http://127.0.0.1:18080";
-const apiOnly = process.env.HEPH_E2E_API_ONLY === "1";
+// The runner allocates one schema and shares it with all workers and servers.
+requiredEnv("HEPH_E2E_SCHEMA");
+const apiURL = requiredEnv("HEPH_E2E_BASE_URL");
+const apiOnly = booleanEnv("HEPH_E2E_API_ONLY");
+const managed = booleanEnv("HEPH_E2E_MANAGED");
+requiredEnv("HEPH_E2E_DATABASE_URL");
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const baseURL = "http://127.0.0.1:15173";
+const baseURL = requiredEnv("HEPH_E2E_WEB_URL");
 
 export default defineConfig({
   testDir: "./tests",
@@ -38,7 +41,7 @@ export default defineConfig({
         ]
       : []),
   ],
-  webServer: process.env.HEPH_E2E_BASE_URL
+  webServer: !managed
     ? []
     : [
         {
@@ -54,9 +57,9 @@ export default defineConfig({
           ? [
               {
                 name: "React frontend",
-                command: "pnpm --filter @heph/web dev --port 15173",
+                command: "pnpm --filter @heph/web dev --port " + new URL(baseURL).port,
                 cwd: root,
-                env: { HEPH_RPC_TARGET: "http://127.0.0.1:18080" },
+                env: { HEPH_RPC_TARGET: apiURL },
                 url: baseURL,
                 reuseExistingServer: false,
                 timeout: 60_000,

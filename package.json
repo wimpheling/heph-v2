@@ -10,7 +10,7 @@
     "check": "vp check && pnpm typecheck && buf lint && pnpm check:contracts && pnpm check:go",
     "check:contracts": "node scripts/check-generated.mjs",
     "typecheck": "pnpm --filter @heph/web exec tsc -b && tsc -p packages/design-system/tsconfig.json && pnpm --filter @heph/e2e typecheck",
-    "test": "node --test tools/oxlint/*.test.mjs scripts/coverage.test.mjs && go test -race ./...",
+    "test": "node --test tools/oxlint/*.test.mjs scripts/*.test.mjs && go test -race ./...",
     "test:coverage": "node scripts/coverage.mjs all",
     "test:coverage:unit": "node scripts/coverage.mjs unit",
     "test:coverage:e2e": "node scripts/coverage.mjs e2e",

@@ -1,12 +1,12 @@
 import { fileURLToPath } from "node:url";
+import { requiredEnv } from "../../../scripts/environment.mjs";
 
 export const root = fileURLToPath(new URL("../../../", import.meta.url));
-export const databaseURL =
-  process.env.HEPH_E2E_DATABASE_URL ??
-  "postgresql://heph:heph-local-placeholder@127.0.0.1:5432/heph?sslmode=disable";
-export const apiURL = process.env.HEPH_E2E_BASE_URL ?? "http://127.0.0.1:18080";
-export const webURL = process.env.HEPH_E2E_WEB_URL ?? "http://127.0.0.1:15173";
-export const schema = process.env.HEPH_E2E_SCHEMA ?? "heph_e2e";
+export const databaseURL = requiredEnv("HEPH_E2E_DATABASE_URL");
+export const apiURL = requiredEnv("HEPH_E2E_BASE_URL");
+export const webURL = requiredEnv("HEPH_E2E_WEB_URL");
+// Playwright allocates this run's isolated schema before starting workers and servers.
+export const schema = requiredEnv("HEPH_E2E_SCHEMA");
 export const binary = fileURLToPath(new URL("../../../bin/heph-e2e", import.meta.url));
 // Synthetic identities for the isolated test installation, never development credentials.
 export const identities = [

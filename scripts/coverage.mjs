@@ -81,7 +81,12 @@ function prepare(kind) {
 }
 function unit() {
   const dir = prepare("unit");
-  run("node", ["--test", "tools/oxlint/plugin.test.mjs", "scripts/coverage.test.mjs"]);
+  run("node", [
+    "--test",
+    "tools/oxlint/plugin.test.mjs",
+    "scripts/coverage.test.mjs",
+    "scripts/environment.test.mjs",
+  ]);
   run("go", [
     "test",
     "-race",

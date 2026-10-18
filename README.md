@@ -22,17 +22,21 @@ pnpm dev
 
 Open http://127.0.0.1:5173. The frontend calls the Go server at 127.0.0.1:8080 through Vite's `/rpc` proxy. Use `pnpm dev:web` and `pnpm dev:server` to start the processes separately. Go reads environment settings through `internal/config`; it does not load `.env` itself.
 
+**NO HARDCODED DEFAULT VALUES FOR ENVIRONMENT VARIABLES.** Required settings must fail when absent or empty. Development and test values must be supplied explicitly through `.env.example`, your shell, or CI. Do not add fallback literals in Go, JavaScript, TypeScript, test harnesses, or Compose. Optional settings may be absent only when absence has defined behavior, such as disabling coverage output; they must not substitute another value. Configuration errors name the setting without printing credentials.
+
 PostgreSQL 18.3 is pinned in `compose.yaml` and CI. Compose binds its port to loopback, waits for a health check, and keeps database files in a named volume. `pnpm db:down` stops the service without deleting the volume. `pnpm db:reset` removes the configured schema's Heph authorization tables and reruns migrations. This POC has no compatibility or data retention requirement.
 
 The server checks database readiness, applies versioned migrations, and seeds bootstrap state during startup. SQL, migrations, and PostgreSQL types belong to `internal/core/postgres/`.
 
 | Setting                     | Purpose                                                                         |
 | --------------------------- | ------------------------------------------------------------------------------- |
-| `HEPH_LISTEN_ADDR`          | Server address, default `127.0.0.1:8080`.                                       |
-| `HEPH_DATABASE_URL`         | PostgreSQL connection URL; the default matches local Compose placeholders.      |
-| `HEPH_DATABASE_SCHEMA`      | Schema name, default `public`.                                                  |
+| `HEPH_LISTEN_ADDR`          | Required server IP address and port.                                            |
+| `HEPH_DATABASE_URL`         | Required PostgreSQL connection URL.                                             |
+| `HEPH_DATABASE_SCHEMA`      | Required PostgreSQL schema name.                                                |
 | `HEPH_BOOTSTRAP_IDENTITIES` | JSON array of `source`, `subject`, and `token` objects. Required to serve RPCs. |
 | `HEPH_RPC_TARGET`           | Vite's backend proxy target.                                                    |
+
+`migrate` and `reset` require only `HEPH_DATABASE_URL` and `HEPH_DATABASE_SCHEMA`. Server startup additionally requires `HEPH_LISTEN_ADDR` and `HEPH_BOOTSTRAP_IDENTITIES`. Vite development requires `HEPH_RPC_TARGET`; a production frontend build does not contact a backend. Compose requires all four `POSTGRES_*` settings in `.env.example`.
 
 The first configured identity receives explicit platform grants for each registered action, once. Further configured identities receive their own personal scope, without platform grants. The driver verifies tokens using fixed-size hashes and constant-time comparisons. Restarting never restores revoked bootstrap grants. Replacing a token keeps the same actor identity; changing the initial bootstrap actor requires resetting this POC's authorization state.
 
@@ -131,6 +135,8 @@ Inside `internal/core/domain/` and every subpackage, the analyzer permits only e
 
 Core cannot import HTTP, ConnectRPC, or generated transport types. Environment reads belong in configuration modules. Frontend application network calls and contract imports belong in typed RPC adapters. The analyzer checks structure; tests prove the policy decisions.
 
+The Go analyzer tracks environment strings through local helpers and rejects fallback assignments and successful fallback returns. Oxlint rejects direct environment fallback operators, assignments, conditional expressions, and destructuring defaults. These checks catch common patterns; configuration loaders must still validate every required input. Add valid and invalid fixtures when extending either rule.
+
 Files under `docs/` remain human-maintained and excluded from agent edits and formatting.
 
 ## Tests and coverage
@@ -151,7 +157,7 @@ On Linux, install browser dependencies with `pnpm --filter @heph/e2e exec playwr
 
 The dedicated `packages/e2e` project owns its dependencies, Playwright configuration, process harness, and HTTP assertions. Its `api` project runs without a browser. Chromium and mobile Chromium also check the existing frontend connection and failure recovery. API success and denial scenarios use real HTTP requests, without replacing the RPC implementation.
 
-The harness uses `HEPH_E2E_DATABASE_URL` or the local Compose URL, a unique schema per run, and synthetic test credentials. It builds and stops its own server on port 18080, restarts a second instance on 18081 for persistence verification, and starts Vite on 15173. Test schemas are dropped during cleanup. Application-specific startup and fixtures live in `harness/`, separate from the reusable API assertions.
+The harness requires the explicit `HEPH_E2E_DATABASE_URL`, `HEPH_E2E_BASE_URL`, `HEPH_E2E_WEB_URL`, `HEPH_E2E_API_ONLY`, and `HEPH_E2E_MANAGED` settings shown in `.env.example`. Export them before running tests. Both flags must be `0` or `1`: API-only skips browsers; managed mode starts and stops the test services. Set managed mode to `0` to test an independently managed installation. The harness allocates a unique schema per run and supplies synthetic test credentials. The example settings start the API on 18080 and Vite on 15173; persistence verification uses a second instance on 18081. Test schemas are dropped during cleanup. Application-specific startup and fixtures live in `harness/`, separate from the reusable API assertions.
 
 ```sh
 # API-only E2E tests need PostgreSQL but no browser installation.

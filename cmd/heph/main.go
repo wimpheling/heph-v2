@@ -22,10 +22,6 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.FromEnv()
-	if err != nil {
-		return err
-	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -34,9 +30,13 @@ func run() error {
 		if command != "migrate" && command != "reset" {
 			return fmt.Errorf("usage: heph [migrate|reset]")
 		}
+		cfg, err := config.DatabaseFromEnv()
+		if err != nil {
+			return err
+		}
 		setupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
-		store, err := postgres.Open(setupCtx, cfg.DatabaseURL, cfg.DatabaseSchema)
+		store, err := postgres.Open(setupCtx, cfg.URL, cfg.Schema)
 		if err != nil {
 			return err
 		}
@@ -46,7 +46,11 @@ func run() error {
 				return err
 			}
 		}
-		return store.Migrate(setupCtx, cfg.DatabaseSchema)
+		return store.Migrate(setupCtx, cfg.Schema)
+	}
+	cfg, err := config.FromEnv()
+	if err != nil {
+		return err
 	}
 	return server.Run(ctx, cfg, logger)
 }

@@ -11,6 +11,7 @@ export default defineConfig({
       "react/rules-of-hooks": "error",
       "heph/design-system-boundary": "error",
       "heph/rpc-boundary": "error",
+      "heph/no-env-defaults": "error",
     },
   },
 });

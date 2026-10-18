@@ -2,6 +2,8 @@
 
 - PR mode: Start each change on a new branch. Run appropriate checks, commit and push the branch, and open a pull request. Never commit or push directly to `main`. Never merge pull requests; the human handles merging.
 - Human-only docs: Agents may read `docs/` for context, but must never create, modify, delete, rename, or automatically format files in that folder. Only humans may change `docs/`, manually.
+- Delegate every coding task to subagents. Keep the main thread available for discussion and coordination.
+- **NO HARDCODED DEFAULT VALUES FOR ENVIRONMENT VARIABLES.** Required settings must fail clearly when missing or empty. Never silently supply a fallback in application code, tooling, test harnesses, or Compose. Put explicit development and test values in `.env.example`, CI, or test fixtures, and pass typed configuration to consumers. Optional settings must have explicit absence semantics, without substituting a fallback value. Never print secret values in configuration errors.
 
 Keep work incremental: this repository is a Git forge and agent runtime, currently at bootstrap stage. We don't need retrocompatibility : this is a POC so you can break APIs, rewrite migrations. There is no data worth anything in the app, at anytime. (We'll remove that if one day the app is used)
 
