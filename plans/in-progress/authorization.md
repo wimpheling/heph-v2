@@ -27,22 +27,22 @@ The builder agent must use the same platform as other Heph agents.
 
 ## Terms
 
-| Term               | Meaning                                                                        |
-| ------------------ | ------------------------------------------------------------------------------ |
-| Actor              | The human or agent that makes a request.                                       |
-| Actor reference    | The pair of `Source` and `Subject` that identifies an actor.                   |
-| Source             | The stable namespace of a trusted identity source.                             |
-| Subject            | The stable actor identifier within that source.                                |
-| Authentication     | The check that identifies the actor from a credential.                         |
-| Authorization      | The check that permits or refuses an action on a resource.                     |
-| Scope              | An ownership boundary, such as a user, organization, or project.               |
-| Grant              | A record that permits an actor to do an action in a scope.                     |
-| Domain operation   | The guarded entry point that checks access before it calls a business handler. |
-| Domain handler     | The private function that runs the business logic after the access check.      |
-| Port               | A Go interface through which the domain requests an external operation.        |
-| Driver             | The implementation of a port for a selected system.                            |
-| Endpoint binding   | The typed connection between an RPC method and its guarded domain operation.   |
-| Database migration | A versioned change to the database schema.                                     |
+| Term               | Meaning                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------- |
+| Actor              | The human or agent that makes a request.                                                           |
+| Actor reference    | The pair of `Source` and `Subject` that identifies an actor.                                       |
+| Source             | The stable namespace of a trusted identity source.                                                 |
+| Subject            | The stable actor identifier within that source.                                                    |
+| Authentication     | The check that identifies the actor from a credential.                                             |
+| Authorization      | The check that permits or refuses an action on a resource.                                         |
+| Scope              | A named authorization boundary with a stable internal ID and one parent, except the platform root. |
+| Grant              | A record that permits an actor to do an action in a scope.                                         |
+| Domain operation   | The guarded entry point that checks access before it calls a business handler.                     |
+| Domain handler     | The private function that runs the business logic after the access check.                          |
+| Port               | A Go interface through which the domain requests an external operation.                            |
+| Driver             | The implementation of a port for a selected system.                                                |
+| Endpoint binding   | The typed connection between an RPC method and its guarded domain operation.                       |
+| Database migration | A versioned change to the database schema.                                                         |
 
 ## Proposed request path
 
@@ -92,7 +92,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Start with one configured bootstrap user and a bootstrap credential.
 - [x] Group drivers under `internal/drivers/bootstrap/` and `internal/drivers/std/`.
 - [x] Use ownership rights and explicit grants for the first access checks.
-- [ ] Confirm the grant record and scope coverage proposed below.
+- [x] Use the grant record fields defined below.
+- [ ] Confirm the scope kinds, parent relationships, and grant coverage proposed below.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
 ## Confirmed actor reference
@@ -210,10 +211,10 @@ For organization-owned resources, check the caller's rights within that organiza
 Refuse access when no rule permits the action.
 Creating an agent does not give it access to its creator's resources.
 
-## Proposed grant model
+## Confirmed grant record
 
 Define these types in `internal/core/authorization`.
-Confirm this model before implementation.
+The scope definition and coverage remain under review.
 
 ```go
 type GrantID string
@@ -251,7 +252,7 @@ Scope IDs are stable internal identifiers.
 Resolve personal scope ownership through the complete actor reference, including its source.
 Do not use an external subject alone as a personal scope ID.
 
-A grant covers its named scope and resources contained within that scope.
+The proposed scope model below defines grant coverage.
 For example, `repository.write` on a project covers repositories in that project.
 Resolve resource containment through trusted core data.
 Do not accept caller-supplied parent scopes as proof of containment.
@@ -260,6 +261,66 @@ Use exact action names without wildcard patterns for the first implementation.
 The grant reader must return only active grants.
 After revocation, the grant must not permit subsequent access checks.
 An access grant does not by itself authorize issuing grants to other actors.
+
+## Proposed scope model
+
+A scope is the authorization boundary to which a grant applies.
+It has a stable internal ID and a registered kind.
+Each scope has one parent, except the platform root.
+The pair of kind and ID identifies the scope.
+
+```go
+const (
+    ScopePlatform     ScopeKind = "platform"
+    ScopePersonal     ScopeKind = "personal"
+    ScopeOrganization ScopeKind = "organization"
+    ScopeProject      ScopeKind = "project"
+    ScopeResource     ScopeKind = "resource"
+)
+
+type Scope struct {
+    Ref    ScopeRef
+    Parent *ScopeRef
+}
+```
+
+| Kind         | Meaning                                                    | Permitted parent                    |
+| ------------ | ---------------------------------------------------------- | ----------------------------------- |
+| Platform     | The entire Heph installation. There is one platform scope. | None.                               |
+| Personal     | Resources owned by one human or agent.                     | Platform.                           |
+| Organization | Resources owned by one organization.                       | Platform.                           |
+| Project      | A project and its resources.                               | Personal or organization.           |
+| Resource     | One resource, such as a repository or secret.              | Personal, organization, or project. |
+
+```text
+platform
+  personal:alice
+    project:personal-tools
+      resource:repository-a
+    resource:personal-secret
+  organization:acme
+    project:heph
+      resource:repository-b
+```
+
+The labels in this example describe the scopes; stored references use stable internal IDs.
+Bind a personal scope to its owner's complete `ActorRef` in trusted core storage.
+Bind organization, project, and resource scopes to their corresponding core records.
+A resource scope ID identifies its permission boundary, independently of its resource name or slug.
+This scope definition does not implement the future resource features.
+
+The core resolver loads scope kinds, IDs, and parent relationships from trusted storage.
+Refuse unknown scopes, invalid parent kinds, cycles, and missing parent records.
+Do not use caller-supplied parent relationships for authorization.
+Organization membership does not change the parent of a personal scope.
+An agent's creator relationship does not create scope containment.
+
+A grant applies to its named scope and all descendants, for its exact action.
+It does not apply to ancestors or siblings.
+A grant at platform scope covers the installation and must be assigned explicitly.
+For a resource action, resolve the existing resource's scope and its ancestors.
+For resource creation, check the intended parent scope before creating the resource.
+Moving a resource changes its inherited access and needs a separate authorized operation.
 
 ## Work steps
 
@@ -330,6 +391,7 @@ An access grant does not by itself authorize issuing grants to other actors.
 
 - [ ] Define the action, resource, scope, and grant types.
 - [ ] Implement the approved grant record and validate its fields.
+- [ ] Implement the approved scope kinds and validate parent relationships.
 - [ ] Resolve grant scope coverage through trusted resource containment.
 - [ ] Require a policy and a private business handler for each domain operation.
 - [ ] Require a resource resolver when the policy needs resource data.
@@ -392,6 +454,8 @@ Access tests must also check the permission decisions.
 - [ ] Verify that a denied actor cannot complete the action.
 - [ ] Verify that grants match only the intended actor, action, and scope.
 - [ ] Verify that grants cover contained resources and exclude unrelated scopes.
+- [ ] Verify that scope grants do not apply to ancestors or sibling scopes.
+- [ ] Verify that invalid scope relationships prevent protected actions.
 - [ ] Verify that a revoked grant cannot permit subsequent access checks.
 - [ ] Verify that a permission error prevents the protected action.
 - [ ] Verify that a refused request never calls the business handler.
