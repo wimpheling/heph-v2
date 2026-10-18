@@ -93,8 +93,9 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Group drivers under `internal/drivers/bootstrap/` and `internal/drivers/std/`.
 - [x] Use ownership rights and explicit grants for the first access checks.
 - [x] Use the grant record fields defined below.
-- [ ] Confirm the scope kinds, parent relationships, and grant coverage proposed below.
-- [ ] Confirm Git ref scopes and separate actions for ref updates and repository settings.
+- [x] Use the scope kinds, parent relationships, and grant coverage defined below.
+- [x] Use Git ref scopes and separate actions for ref updates and repository settings.
+- [x] Add further scope boundaries when features require them, with explicit definitions and access tests.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
 ## Confirmed actor reference
@@ -215,7 +216,7 @@ Creating an agent does not give it access to its creator's resources.
 ## Confirmed grant record
 
 Define these types in `internal/core/authorization`.
-The scope definition and coverage remain under review.
+Use the confirmed scope definition and coverage below.
 
 ```go
 type GrantID string
@@ -240,7 +241,7 @@ type Grant struct {
 
 `ID` identifies the grant for lookup and revocation.
 `Grantee` identifies the human or agent that receives permission.
-`Action` names one registered operation, such as `repository.write`.
+`Action` names one registered operation, such as `git.ref.update`.
 `Scope` identifies the boundary in which the permission applies.
 `GrantedBy` identifies the actor that issued the grant.
 `CreatedAt` records when the grant was created.
@@ -253,8 +254,8 @@ Scope IDs are stable internal identifiers.
 Resolve personal scope ownership through the complete actor reference, including its source.
 Do not use an external subject alone as a personal scope ID.
 
-The proposed scope model below defines grant coverage.
-For example, `repository.write` on a project covers repositories in that project.
+The confirmed scope model below defines grant coverage.
+For example, `git.ref.update` on a project covers refs in that project's repositories.
 Resolve resource containment through trusted core data.
 Do not accept caller-supplied parent scopes as proof of containment.
 Do not match unrelated scopes or actions.
@@ -263,7 +264,7 @@ The grant reader must return only active grants.
 After revocation, the grant must not permit subsequent access checks.
 An access grant does not by itself authorize issuing grants to other actors.
 
-## Proposed scope model
+## Confirmed scope model
 
 A scope is the authorization boundary to which a grant applies.
 It has a stable internal ID and a registered kind.
@@ -327,7 +328,13 @@ For a resource action, resolve the existing resource's scope and its ancestors.
 For resource creation, check the intended parent scope and any target-specific policy before creating the resource.
 Moving a resource changes its inherited access and needs a separate authorized operation.
 
-## Proposed permissions for Git refs
+Add further scope boundaries when a feature needs finer access control.
+Define each new kind, its valid parents, its target resolver, and its action coverage explicitly.
+Add access tests for each new boundary.
+Do not accept unregistered scope kinds.
+Do not add unused scope kinds in advance.
+
+## Confirmed permissions for Git refs
 
 Treat each branch as a Git ref scope beneath its repository scope.
 Identify the target with the repository's stable ID and the full Git ref name.
