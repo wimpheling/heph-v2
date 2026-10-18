@@ -96,7 +96,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Use the scope kinds, parent relationships, and grant coverage defined below.
 - [x] Use Git ref scopes and separate actions for ref updates and repository settings.
 - [x] Add further scope boundaries when features require them, with explicit definitions and access tests.
-- [ ] Confirm the Go error exceptions and the domain rules below.
+- [x] Use the Go error exceptions and domain rules below.
+- [ ] Confirm `AuthorizationService.ListGrants` as the first protected endpoint.
 
 ## Confirmed actor reference
 
@@ -365,6 +366,41 @@ This plan defines the authorization model and its unit fixtures.
 It does not implement Git pushes or branch management in the first platform feature.
 Branch name patterns remain a separate decision; start with exact ref names.
 
+## Confirmed domain lint rules
+
+Apply the restrictions to `internal/core/domain/` and all its subpackages.
+Permit calls only to explicitly approved services, ports, and helpers.
+Business branches use named booleans, optionally combined with `!`, `&&`, and `||`.
+Permit `if`, `else`, local variables, field access, and typed results.
+Permit error propagation, error comparisons with `nil`, `errors.Is`, and `errors.As`.
+Resolve Go types when applying error exceptions; a variable name alone is insufficient.
+Refuse raw business comparisons, arithmetic, string calculations, loops, switches, and direct infrastructure access.
+Keep computations in approved services outside the restricted domain packages.
+The analyzer implementation and its fixtures remain work to complete.
+
+## Proposed first protected endpoint
+
+The existing `GetSystemInfo` endpoint is public.
+Add a protected endpoint to verify the complete authentication and authorization path.
+Confirm this endpoint before implementation.
+
+| Item            | Proposal                                                 |
+| --------------- | -------------------------------------------------------- |
+| RPC             | `AuthorizationService.ListGrants`                        |
+| Authentication  | `AUTHENTICATION_REQUIRED`                                |
+| Input           | The target `ScopeRef` and pagination fields.             |
+| Required action | `authorization.grants.read` on the target scope.         |
+| Result          | A page of active grants attached directly to that scope. |
+
+Resolve the target scope from trusted core storage before the access check.
+Use the verified caller as the actor.
+Do not permit the caller to select another actor for authentication.
+Check access through the guarded domain operation before reading the grant results.
+Do not include ancestor grants or descendant grants in this endpoint's results.
+Use PostgreSQL records for the integration test.
+Verify that denied requests never invoke the private handler.
+Grant creation and revocation endpoints need a separate policy decision before implementation.
+
 ## Work steps
 
 ### 1. Set up PostgreSQL
@@ -398,6 +434,7 @@ Branch name patterns remain a separate decision; start with exact ref names.
 - [ ] Describe the purpose, inputs, outputs, and expected errors.
 - [ ] Require an explicit access policy for each RPC method.
 - [ ] Declare `GetSystemInfo` as public.
+- [ ] Add the approved protected endpoint and its documented authorization action.
 - [ ] Refuse an access policy that is missing or unknown.
 - [ ] Generate an endpoint reference from the protobuf contract.
 - [ ] Put the generated reference outside `docs/`.
@@ -495,6 +532,7 @@ Access tests must also check the permission decisions.
 - [ ] Verify that a protected endpoint refuses missing and invalid credentials.
 - [ ] Verify that a valid credential produces the correct actor.
 - [ ] Verify that an allowed actor can complete a protected action.
+- [ ] Verify that the approved protected endpoint returns persisted data only after authorization.
 - [ ] Verify that a denied actor cannot complete the action.
 - [ ] Verify that grants match only the intended actor, action, and scope.
 - [ ] Verify that grants cover contained resources and exclude unrelated scopes.
