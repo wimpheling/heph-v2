@@ -85,7 +85,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Keep user account management in identity drivers, outside core.
 - [x] Treat organizations as ownership scopes.
 - [x] Pass the actor explicitly to each protected domain operation.
-- [ ] Keep session IDs, credential IDs, and run IDs separate from actor IDs.
+- [x] Keep session IDs, credential IDs, and run IDs separate from actor references.
 - [ ] Keep the permission engine in core.
 - [ ] Supply identity and permission data through injected interfaces.
 - [ ] Start with one configured bootstrap user and a bootstrap credential.
@@ -133,6 +133,18 @@ The operation's guard checks the actor's permissions before it calls the private
 Internal callers must also supply the actor explicitly.
 Do not retrieve the actor from context values or global state.
 Do not accept request fields as proof of the caller's identity.
+
+## Confirmed ID separation
+
+The actor reference identifies the human or agent that performs an action.
+A session ID identifies a login session.
+A credential ID identifies the credential used for authentication.
+A run ID identifies one execution of an agent.
+Keep these identifiers separate.
+An actor retains its reference across sessions, credential rotations, and runs.
+Permissions attach to the actor reference.
+Keep session, credential, and run identifiers available for separate tracing.
+This decision does not add session management or agent execution to this feature.
 
 ## Work steps
 
