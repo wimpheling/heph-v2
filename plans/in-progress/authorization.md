@@ -9,7 +9,8 @@ Keep the plan and the feature implementation in the same pull request.
 Require each RPC endpoint to have a documented contract and a domain handler.
 Identify each caller.
 Check access before each protected action.
-Store identity and permission data in PostgreSQL.
+Store actor references and permission data in PostgreSQL.
+Keep user account management in identity drivers, outside core.
 
 Build the platform before the builder agent.
 The builder agent must use the same platform as other Heph agents.
@@ -29,6 +30,9 @@ The builder agent must use the same platform as other Heph agents.
 | Term               | Meaning                                                                        |
 | ------------------ | ------------------------------------------------------------------------------ |
 | Actor              | The human or agent that makes a request.                                       |
+| Actor reference    | The pair of `Source` and `Subject` that identifies an actor.                   |
+| Source             | The stable namespace of a trusted identity source.                             |
+| Subject            | The stable actor identifier within that source.                                |
 | Authentication     | The check that identifies the actor from a credential.                         |
 | Authorization      | The check that permits or refuses an action on a resource.                     |
 | Scope              | An ownership boundary, such as a user, organization, or project.               |
@@ -77,7 +81,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Bind each RPC to a guarded domain operation with typed Go references and input and output conversion functions.
 - [x] Use a protobuf method option with `AUTHENTICATION_PUBLIC`, `AUTHENTICATION_REQUIRED`, and `AUTHENTICATION_UNSPECIFIED` values.
 - [x] Require an authorization guard before each private business handler, including operations called without RPC.
-- [ ] Use stable actor IDs for humans and agents.
+- [x] Identify humans and agents with stable `ActorRef` values containing `Source` and `Subject`.
+- [x] Keep user account management in identity drivers, outside core.
 - [ ] Treat organizations as ownership scopes.
 - [ ] Pass the actor explicitly to domain operations.
 - [ ] Keep session IDs, credential IDs, and run IDs separate from actor IDs.
@@ -86,6 +91,28 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Start with one configured bootstrap user and a bootstrap credential.
 - [ ] Define ownership rights and explicit grants for the first access checks.
 - [ ] Confirm the Go error exceptions and the domain rules below.
+
+## Confirmed actor reference
+
+```go
+type ActorRef struct {
+    Source  string
+    Subject string
+}
+```
+
+The authentication driver supplies both fields after it verifies the credential.
+The pair identifies the actor.
+Different sources can use the same subject value.
+Each source must keep its subject values stable and must not assign them to another actor.
+Treat both fields as opaque, case-sensitive values.
+Core does not require a UUID format.
+Do not use a display name or email address as the actor reference.
+
+Core uses actor references for ownership and grants.
+Identity drivers manage accounts, profiles, login, and credentials.
+An identity driver can use local storage or an external identity provider.
+PostgreSQL storage does not require core to manage user accounts.
 
 ## Work steps
 
@@ -101,7 +128,8 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Read the application database connection settings through `internal/config`.
 - [ ] Create the database connection pool during platform startup.
 - [ ] Close the database connection pool during shutdown.
-- [ ] Add versioned migrations for identity and permission data.
+- [ ] Add versioned migrations for actor references and permission data.
+- [ ] Keep any local account storage inside the identity driver.
 - [ ] Keep SQL and PostgreSQL types inside the database drivers.
 - [ ] Supply the database drivers through the core port interfaces.
 - [ ] Use PostgreSQL for the first bootstrap storage drivers.
@@ -138,6 +166,8 @@ After approval, mark the decision complete and explain the next decision.
 ### 4. Identify the caller
 
 - [ ] Define the actor type and the authentication interface.
+- [ ] Use the verified `Source` and `Subject` pair as the actor reference.
+- [ ] Keep account management outside core.
 - [ ] Verify the credential before each protected RPC method.
 - [ ] Return an actor only after successful authentication.
 - [ ] Pass the verified actor from the RPC adapter to the guarded domain operation.
@@ -200,7 +230,7 @@ Access tests must also check the permission decisions.
 
 - [ ] Verify that the Compose service becomes healthy.
 - [ ] Verify that migrations prepare an empty database.
-- [ ] Verify that identity and permission data survive application and database restarts.
+- [ ] Verify that actor references and permission data survive application and database restarts.
 - [ ] Verify that database errors prevent protected actions.
 - [ ] Verify that the public system endpoint works without a credential.
 - [ ] Verify that a protected endpoint refuses missing and invalid credentials.
@@ -222,7 +252,7 @@ Access tests must also check the permission decisions.
 
 - The project Compose file starts a healthy PostgreSQL service.
 - Database migrations prepare the schema.
-- PostgreSQL stores identity and permission data across restarts.
+- PostgreSQL stores actor references and permission data across restarts.
 - Every RPC endpoint has documentation, an access policy, and a domain handler.
 - Protected requests have a verified actor.
 - Guarded domain operations check access before they call private business handlers.
