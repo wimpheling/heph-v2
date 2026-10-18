@@ -1,6 +1,6 @@
 # Platform authorization
 
-Status: Decisions approved. Implementation is pending. The feature is not complete.
+Status: Implementation authorized. Complete the feature and validate local and CI checks before human review.
 
 Keep the plan and the feature implementation in the same pull request.
 
@@ -10,6 +10,7 @@ Require each RPC endpoint to have a documented contract and a domain handler.
 Identify each caller.
 Check access before each protected action.
 Store actor references and permission data in PostgreSQL.
+Provide RPC endpoints to create, inspect, list, and revoke grants.
 Keep user account management in identity drivers, outside core.
 
 Build the platform before the builder agent.
@@ -98,6 +99,11 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Add further scope boundaries when features require them, with explicit definitions and access tests.
 - [x] Use the Go error exceptions and domain rules below.
 - [x] Use `AuthorizationService.ListGrants` as the first protected endpoint.
+- [x] Include the complete grant management lifecycle in this PR.
+- [x] Use the grant RPC set and immutable grant fields below.
+- [x] Use the grant creation and revocation policies below, including prevention of privilege escalation.
+- [x] Use Playwright E2E tests for most behavioral verification, including API-only requests.
+- [x] Produce separate unit, E2E, and combined coverage reports locally and in CI.
 
 ## Confirmed actor reference
 
@@ -398,7 +404,48 @@ Check access through the guarded domain operation before reading the grant resul
 Do not include ancestor grants or descendant grants in this endpoint's results.
 Use PostgreSQL records for the integration test.
 Verify that denied requests never invoke the private handler.
-Grant creation and revocation endpoints need a separate policy decision before implementation.
+
+## Grant management RPCs
+
+Complete grant management is required for this PR.
+Keep `ListGrants` as the first implementation step, then complete the remaining endpoints in the same PR.
+Implement the following API shape.
+
+| RPC           | Input                       | Result                                         | Required action                                      |
+| ------------- | --------------------------- | ---------------------------------------------- | ---------------------------------------------------- |
+| `CreateGrant` | Grantee, action, and scope. | The created grant.                             | `authorization.grants.create` on the proposed scope. |
+| `GetGrant`    | Grant ID.                   | The grant and its revocation state.            | `authorization.grants.read` on its stored scope.     |
+| `ListGrants`  | Scope and pagination.       | Active grants attached directly to that scope. | `authorization.grants.read` on the requested scope.  |
+| `RevokeGrant` | Grant ID.                   | The recorded revocation.                       | `authorization.grants.revoke` on its stored scope.   |
+
+Require authentication for all four endpoints.
+The server assigns grant IDs, creation timestamps, and `GrantedBy` from the verified actor.
+Clients must not choose the issuer or creation timestamp.
+Keep the grantee, action, and scope immutable after creation.
+Change an assignment by revoking the old grant and creating a new grant.
+This proposal has no `UpdateGrant` endpoint.
+Retain the original grant record after revocation.
+Record the revoking actor and revocation timestamp.
+Exclude revoked grants from access decisions and the active grant list.
+Derive authorization scopes for ID-based requests from trusted stored records.
+
+## Grant mutation policy
+
+Apply these rules to grant mutations.
+Creating a grant requires `authorization.grants.create` on the target scope.
+The caller must also hold the action being granted across the entire target scope.
+A branch-limited grant cannot justify granting the same action on the whole repository.
+Do not allow a caller to grant an action or scope coverage that the caller does not have.
+Creating grant-management permissions follows the same rule.
+Revoking a grant requires `authorization.grants.revoke` on that grant's stored scope.
+The original issuer does not receive an automatic exception to these checks.
+Run the final permission checks and mutation in one consistent database transaction.
+Refuse the mutation if permissions cannot be verified.
+
+Bootstrap setup seeds the initial explicit grants before the first protected API call.
+Include the grant-management actions needed by the bootstrap actor.
+This initialization is the starting point for the first grant, rather than another grant RPC call.
+After initialization, normal grant operations must use the guarded domain operations.
 
 ## Work steps
 
@@ -433,7 +480,7 @@ Grant creation and revocation endpoints need a separate policy decision before i
 - [ ] Describe the purpose, inputs, outputs, and expected errors.
 - [ ] Require an explicit access policy for each RPC method.
 - [ ] Declare `GetSystemInfo` as public.
-- [ ] Add the approved protected endpoint and its documented authorization action.
+- [ ] Define all four approved grant RPCs and their documented authorization actions.
 - [ ] Refuse an access policy that is missing or unknown.
 - [ ] Generate an endpoint reference from the protobuf contract.
 - [ ] Put the generated reference outside `docs/`.
@@ -470,6 +517,9 @@ Grant creation and revocation endpoints need a separate policy decision before i
 
 - [ ] Define the action, resource, scope, and grant types.
 - [ ] Implement the approved grant record and validate its fields.
+- [ ] Implement the approved grant creation and revocation policies.
+- [ ] Persist grant creation and revocation through core PostgreSQL transactions.
+- [ ] Keep issuer and revocation metadata controlled by the server.
 - [ ] Implement the approved scope kinds and validate parent relationships.
 - [ ] Add authorization fixtures for exact Git ref scopes beneath repository scopes.
 - [ ] Resolve grant scope coverage through trusted resource containment.
@@ -523,6 +573,16 @@ Access tests must also check the permission decisions.
 
 ### 7. Verify the complete request path
 
+- [ ] Keep the dedicated Playwright workspace at `packages/e2e/` self-contained and portable.
+- [ ] Add an API-only Playwright project with real RPC requests against the Go server and PostgreSQL.
+- [ ] Put most behavioral scenarios in Playwright; keep focused unit tests for policies, guards, and analyzer fixtures.
+- [ ] Isolate test database state and credentials from development data.
+- [ ] Collect Go coverage from the real server process during Playwright tests.
+- [ ] Produce unit, E2E, and combined coverage profiles, HTML reports, and machine-readable summaries.
+- [ ] Merge covered statements rather than averaging unit and E2E percentages.
+- [ ] Use the same handwritten application package set for all three coverage reports.
+- [ ] Run the test suites and coverage collection in CI and publish report artifacts.
+
 - [ ] Verify that the Compose service becomes healthy.
 - [ ] Verify that migrations prepare an empty database.
 - [ ] Verify that actor references and permission data survive application and database restarts.
@@ -532,6 +592,14 @@ Access tests must also check the permission decisions.
 - [ ] Verify that a valid credential produces the correct actor.
 - [ ] Verify that an allowed actor can complete a protected action.
 - [ ] Verify that the approved protected endpoint returns persisted data only after authorization.
+- [ ] Verify the complete create, get, list, and revoke lifecycle through real RPC requests.
+- [ ] Verify that the server assigns issuer and creation metadata from trusted values.
+- [ ] Verify that revocation records the verified actor and timestamp.
+- [ ] Verify that revoked records remain inspectable by authorized callers.
+- [ ] Verify that a caller cannot grant actions or scope coverage it does not hold.
+- [ ] Verify that a branch-limited caller cannot grant repository-wide access.
+- [ ] Verify that grant-management rights cannot be escalated through grant creation.
+- [ ] Verify that denied mutations and database failures leave grant state unchanged.
 - [ ] Verify that a denied actor cannot complete the action.
 - [ ] Verify that grants match only the intended actor, action, and scope.
 - [ ] Verify that grants cover contained resources and exclude unrelated scopes.
@@ -561,12 +629,17 @@ Plan approval alone does not complete the feature.
 - Versioned migrations prepare an empty database without manual SQL changes.
 - Documented commands start, stop, migrate, and reset the local database.
 - Core PostgreSQL persistence stores actor references, scopes, and grants across restarts.
-- Bootstrap setup provides the initial scope and explicit grants needed to exercise `ListGrants`.
+- Bootstrap setup provides the initial scope and explicit grants needed to manage grants through the API.
 - The bootstrap identity driver verifies its configured token and returns the correct stable actor reference.
 - Credentials stay outside Git; `.env.example` contains placeholders.
 - `GetSystemInfo` remains explicitly public and works without a credential.
 - `AuthorizationService.ListGrants` requires authentication and `authorization.grants.read` on the requested scope.
 - `ListGrants` returns paginated active grants attached directly to the authorized scope.
+- `CreateGrant`, `GetGrant`, and `RevokeGrant` implement the approved lifecycle and access policies.
+- Grant creation cannot assign rights or scope coverage beyond the caller's own rights.
+- Grant records remain immutable; revocation records who revoked access and when.
+- An authorized caller can create, inspect, list, revoke, and inspect the revoked grant through RPC.
+- Revoked grants no longer permit subsequent access checks.
 - Missing credentials, invalid credentials, and insufficient permissions prevent the private handler from running.
 - Permission lookup failures also prevent the private handler from running.
 - Core implements the approved grant model, scope hierarchy, ownership rules, and exact action matching.
@@ -578,18 +651,21 @@ Plan approval alone does not complete the feature.
 - The custom Go analyzer enforces the approved domain, endpoint binding, and authorization guard rules.
 - Valid and invalid analyzer fixtures cover each rule, including aliases and attempted bypasses.
 - RPC integration tests use PostgreSQL and prove both allowed and refused requests.
+- Playwright API tests verify the complete grant lifecycle and most observable authorization behavior.
+- CI runs unit tests and Playwright tests against real PostgreSQL.
+- Unit, E2E, and combined coverage reports are available as CI artifacts.
 - `pnpm check`, `pnpm test`, `pnpm test:e2e`, and `pnpm build` pass, including the required CI checks.
-- `README.md` documents setup and how to call the protected endpoint.
+- `README.md` documents setup and the complete grant RPC lifecycle.
 - `AGENTS.md` describes the implemented architecture and lint rules.
 - All completed work is committed and pushed to this feature PR.
 - The PR is ready for human review and remains unmerged.
 
 ## Feature boundary
 
-This PR builds the platform authorization foundation and the first protected read endpoint.
+This PR builds the platform authorization foundation and the complete grant management RPC lifecycle.
 Git ref scopes are implemented and tested as authorization boundaries.
 Git push handling and live branch management are later features.
-Grant creation and revocation APIs require a separate policy decision.
+Grant creation and revocation APIs are required; their policy review must finish before implementation.
 External identity providers, login screens, and session management are later features.
 Agent execution, chat, and the builder agent are later features.
 
