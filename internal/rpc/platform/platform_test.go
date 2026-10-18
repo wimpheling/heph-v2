@@ -1,6 +1,9 @@
 package platform
 
 import (
+	"net/http"
+	"testing"
+
 	policy "github.com/wimpheling/heph-v2/gen/heph/platform/v1"
 	pb "github.com/wimpheling/heph-v2/gen/heph/system/v1"
 	"github.com/wimpheling/heph-v2/internal/core"
@@ -9,8 +12,6 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"net/http"
-	"testing"
 )
 
 func TestAuthenticationMetadata(t *testing.T) {

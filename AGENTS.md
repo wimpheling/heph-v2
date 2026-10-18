@@ -26,4 +26,15 @@ Keep core use-case orchestration restricted and readable as business policy. Dom
 - Side effects go through declared ports. Use cases must not directly access files, databases, the network, environment variables, or process execution.
 - Keep meaningful predicates and computations in independently testable domain operations; avoid creating arbitrary helper services solely to bypass the restrictions.
 
-This is an architecture guideline, not a rule currently enforced by the Go analyzer. When implementing enforcement, explicitly identify the use-case packages or functions, define the approved call targets and exceptions, and add valid and invalid fixtures. Do not apply these restrictions indiscriminately to domain services, adapters, generated code, or tests.
+The Go analyzer enforces these restrictions in `internal/core/domain/` and every subpackage. Operation factories only return `operation.Define` with an explicit policy and a private handler. Only approved authorization services, the `authorization.GrantReader` port, system metadata, and explicit operation/error helpers are call targets. Add valid and invalid fixtures when extending this allowlist. Domain services, transport adapters, generated code, and tests are outside the restricted handler rules.
+
+## Platform authorization
+
+- PostgreSQL is an opinionated core dependency. Keep SQL, migrations, and PostgreSQL types in `internal/core/postgres/`. Keep permission decisions in `internal/core/authorization`, independent of SQL and transport types.
+- Replaceable drivers belong under `internal/drivers/bootstrap/` or `internal/drivers/std/`. The bootstrap identity driver is `internal/drivers/bootstrap/identity/`. User accounts and credentials stay outside core.
+- Identify a caller with the verified `identity.ActorRef{Source, Subject}` pair. Pass it explicitly to protected operations; do not retrieve actor identity from context values, global state, or request claims.
+- Define each RPC's comments and explicit authentication option in `proto/`. The custom generator rejects missing documentation and unknown policies and writes `api/endpoints.md`. Register services through `rpc/platform.Register`; bind each method exactly once to a domain operation with typed converters.
+- Raw handlers are private and may only be referenced by `operation.Define`. RPC and internal callers execute guarded operations. Use the transaction service supplied to the handler so authorization and effects share the same database transaction.
+- Grant assignments are immutable. Grant creation requires management rights and possession of the delegated action over the complete target scope. Revocation keeps the original record and its audit metadata. Bootstrap grants are seeded once; restarting must not restore revoked grants.
+- Use Playwright in the dedicated `packages/e2e/` workspace for most behavior tests, including API-only tests against real PostgreSQL. Keep focused unit tests for policy invariants, guard failures, and analyzer fixtures. Keep the test harness separate from HTTP assertions so it can be replaced with another application runtime.
+- Run `pnpm test:coverage` for unit, E2E, and combined Go application coverage. The reports must use the same source blocks and merge counters, not percentages. CI runs both suites and publishes coverage and Playwright artifacts.

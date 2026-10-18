@@ -3,13 +3,19 @@ package valid
 import (
 	"context"
 	"errors"
+	"io/fs"
+
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 	op "github.com/wimpheling/heph-v2/internal/core/operation"
-	"io/fs"
 )
 
 type Input = a.ListInput
+type InfoOperation = op.Operation[Input, int]
+
+func Alias(service *a.Service) *InfoOperation {
+	return op.Define[Input, int](service, op.Require(a.GrantRead, a.StoredScope), (handle))
+}
 
 func Info(service *a.Service) *op.Operation[Input, int] {
 	return op.Define(service, op.Require(a.GrantRead, a.StoredScope), handle)

@@ -43,7 +43,10 @@ export function mergeProfiles(profiles) {
 }
 function report(kind) {
   const dir = resolve(coverage, kind);
-  const profile = readFileSync(resolve(dir, "coverage.out"), "utf8");
+  // go test -coverpkg may emit the same source block from several test binaries.
+  // Normalize first so its statement denominator matches the E2E profile.
+  const profile = mergeProfiles([readFileSync(resolve(dir, "coverage.out"), "utf8")]);
+  writeFileSync(resolve(dir, "coverage.out"), profile);
   let covered = 0,
     total = 0;
   for (const line of profile.trim().split("\n").slice(1)) {

@@ -3,10 +3,11 @@ package operation_test
 import (
 	"context"
 	"errors"
+	"testing"
+
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 	"github.com/wimpheling/heph-v2/internal/core/operation"
-	"testing"
 )
 
 type store struct {

@@ -129,6 +129,10 @@ test("creation requires management rights and possession of delegated rights", a
     agent.token,
   );
   await denied(request, "CreateGrant", { ...body, action: remove }, agent.token);
+  const broaderManagement = await grant(request, agent, create, repo);
+  // Repository management cannot widen branch-only write rights.
+  await denied(request, "CreateGrant", { ...body, scope: repo }, agent.token);
+  await revoke(request, broaderManagement.id);
   await revoke(request, created.grant.id);
   await revoke(request, update.id);
   await revoke(request, manage.id);
@@ -204,6 +208,7 @@ test("invalid scopes, actions, identities, limits and cursors fail closed", asyn
   for (const input of [
     {},
     { scope: { kind: "SCOPE_KIND_UNSPECIFIED", id: "x" } },
+    { scope: { kind: "SCOPE_KIND_PLATFORM", id: "\u0000" } },
     { scope: platform, pageSize: -1 },
     { scope: platform, pageSize: 101 },
     { scope: platform, pageToken: "invalid-token" },
@@ -240,6 +245,16 @@ test("caller-supplied audit fields and actor claims cannot become trusted identi
   );
   expect([400, 403]).toContain(forged.status());
   await denied(request, "ListGrants", { scope: platform, actor: actor(admin) }, agent.token);
+  const created = await ok(request, "CreateGrant", {
+    grantee: actor(alice),
+    action: read,
+    scope: branch,
+    grantedBy: actor(agent),
+    createdAt: "2000-01-01T00:00:00Z",
+  });
+  expect(created.grant.grantedBy).toEqual(actor(admin));
+  expect(Date.parse(created.grant.createdAt)).toBeGreaterThan(Date.parse("2000-01-01T00:00:00Z"));
+  await revoke(request, created.grant.id);
 });
 
 test("concurrent duplicate creation persists only one active grant", async ({ request }) => {

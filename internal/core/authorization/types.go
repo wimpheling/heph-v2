@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"time"
+	"unicode"
 
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 )
@@ -59,7 +60,7 @@ type ScopeRef struct {
 }
 
 func (s ScopeRef) Valid() bool {
-	if s.ID == "" || len(s.ID) > 128 {
+	if !validID(string(s.ID)) {
 		return false
 	}
 	switch s.Kind {
@@ -67,6 +68,18 @@ func (s ScopeRef) Valid() bool {
 		return true
 	}
 	return false
+}
+
+func validID(value string) bool {
+	if value == "" || len(value) > 128 {
+		return false
+	}
+	for _, character := range value {
+		if unicode.IsSpace(character) || unicode.IsControl(character) {
+			return false
+		}
+	}
+	return true
 }
 
 var PlatformScope = ScopeRef{Kind: ScopePlatform, ID: "platform"}

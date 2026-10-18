@@ -2,18 +2,19 @@
 package platform
 
 import (
-	"connectrpc.com/connect"
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
+	"connectrpc.com/connect"
 	policyv1 "github.com/wimpheling/heph-v2/gen/heph/platform/v1"
 	"github.com/wimpheling/heph-v2/internal/core/authorization"
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 	"github.com/wimpheling/heph-v2/internal/core/operation"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"net/http"
-	"strings"
 )
 
 type Registry struct {

@@ -3,6 +3,7 @@ package authorization
 import (
 	"context"
 	"errors"
+
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 )
 

@@ -1,6 +1,6 @@
 # Platform authorization
 
-Status: Implementation authorized. Complete the feature and validate local and CI checks before human review.
+Status: Implementation complete. Final CI validation is pending. The PR remains open for human review.
 
 Keep the plan and the feature implementation in the same pull request.
 
@@ -423,7 +423,7 @@ The server assigns grant IDs, creation timestamps, and `GrantedBy` from the veri
 Clients must not choose the issuer or creation timestamp.
 Keep the grantee, action, and scope immutable after creation.
 Change an assignment by revoking the old grant and creating a new grant.
-This proposal has no `UpdateGrant` endpoint.
+The API has no `UpdateGrant` endpoint.
 Retain the original grant record after revocation.
 Record the revoking actor and revocation timestamp.
 Exclude revoked grants from access decisions and the active grant list.
@@ -451,174 +451,174 @@ After initialization, normal grant operations must use the guarded domain operat
 
 ### 1. Set up PostgreSQL
 
-- [ ] Add a PostgreSQL service to the root `compose.yaml` file.
-- [ ] Pin the PostgreSQL version.
-- [ ] Bind the local database port to `127.0.0.1`.
-- [ ] Add a named volume to keep data across container restarts.
-- [ ] Add a database health check.
-- [ ] Wait for database readiness before migrations and application startup.
-- [ ] Add `.env.example` with local database settings and placeholder credentials.
-- [ ] Read the application database connection settings through `internal/config`.
-- [ ] Create the database connection pool during platform startup.
-- [ ] Close the database connection pool during shutdown.
-- [ ] Add versioned migrations for actor references and permission data.
-- [ ] Keep any local account storage inside the identity driver.
-- [ ] Keep SQL and PostgreSQL types inside `internal/core/postgres/`.
-- [ ] Put PostgreSQL storage and migrations in `internal/core/postgres/`.
-- [ ] Supply core persistence through the interfaces used by the business services.
-- [ ] Use core PostgreSQL persistence with the bootstrap identity driver.
-- [ ] Use test doubles for isolated unit tests.
-- [ ] Add commands to start, stop, migrate, and reset the local database.
-- [ ] Document how the Go application receives the database connection settings.
-- [ ] Use the same PostgreSQL version for local development and CI.
-- [ ] Prepare a separate database or schema for each integration test run.
-- [ ] Prepare the database for integration tests and browser tests.
+- [x] Add a PostgreSQL service to the root `compose.yaml` file.
+- [x] Pin the PostgreSQL version.
+- [x] Bind the local database port to `127.0.0.1`.
+- [x] Add a named volume to keep data across container restarts.
+- [x] Add a database health check.
+- [x] Wait for database readiness before migrations and application startup.
+- [x] Add `.env.example` with local database settings and placeholder credentials.
+- [x] Read the application database connection settings through `internal/config`.
+- [x] Create the database connection pool during platform startup.
+- [x] Close the database connection pool during shutdown.
+- [x] Add versioned migrations for actor references and permission data.
+- [x] Keep any local account storage inside the identity driver.
+- [x] Keep SQL and PostgreSQL types inside `internal/core/postgres/`.
+- [x] Put PostgreSQL storage and migrations in `internal/core/postgres/`.
+- [x] Supply core persistence through the interfaces used by the business services.
+- [x] Use core PostgreSQL persistence with the bootstrap identity driver.
+- [x] Use test doubles for isolated unit tests.
+- [x] Add commands to start, stop, migrate, and reset the local database.
+- [x] Document how the Go application receives the database connection settings.
+- [x] Use the same PostgreSQL version for local development and CI.
+- [x] Prepare a separate database or schema for each integration test run.
+- [x] Prepare the database for integration tests and browser tests.
 
 ### 2. Define and document the endpoint contract
 
-- [ ] Add comments for each RPC method and its request and response fields.
-- [ ] Describe the purpose, inputs, outputs, and expected errors.
-- [ ] Require an explicit access policy for each RPC method.
-- [ ] Declare `GetSystemInfo` as public.
-- [ ] Define all four approved grant RPCs and their documented authorization actions.
-- [ ] Refuse an access policy that is missing or unknown.
-- [ ] Generate an endpoint reference from the protobuf contract.
-- [ ] Put the generated reference outside `docs/`.
+- [x] Add comments for each RPC method and its request and response fields.
+- [x] Describe the purpose, inputs, outputs, and expected errors.
+- [x] Require an explicit access policy for each RPC method.
+- [x] Declare `GetSystemInfo` as public.
+- [x] Define all four approved grant RPCs and their documented authorization actions.
+- [x] Refuse an access policy that is missing or unknown.
+- [x] Generate an endpoint reference from the protobuf contract.
+- [x] Put the generated reference outside `docs/`.
 
 ### 3. Connect each endpoint to its domain handler
 
-- [ ] Add a typed endpoint binding.
-- [ ] Bind each RPC adapter to a guarded domain operation instead of its raw business handler.
-- [ ] Use actual Go function references instead of handler names stored as strings.
-- [ ] Add typed conversion functions for the RPC request and the domain result.
-- [ ] Require exactly one binding for each RPC method.
-- [ ] Use Go type checks to verify compatible binding types.
-- [ ] Give the system operation an explicit public policy and a private domain handler.
-- [ ] Limit RPC adapters to authentication, data translation, delegation, and error translation.
-- [ ] Require endpoint registration through the platform.
-- [ ] Use only core types in the domain.
+- [x] Add a typed endpoint binding.
+- [x] Bind each RPC adapter to a guarded domain operation instead of its raw business handler.
+- [x] Use actual Go function references instead of handler names stored as strings.
+- [x] Add typed conversion functions for the RPC request and the domain result.
+- [x] Require exactly one binding for each RPC method.
+- [x] Use Go type checks to verify compatible binding types.
+- [x] Give the system operation an explicit public policy and a private domain handler.
+- [x] Limit RPC adapters to authentication, data translation, delegation, and error translation.
+- [x] Require endpoint registration through the platform.
+- [x] Use only core types in the domain.
 
 ### 4. Identify the caller
 
-- [ ] Define the actor type and the authentication interface.
-- [ ] Use the verified `Source` and `Subject` pair as the actor reference.
-- [ ] Keep account management outside core.
-- [ ] Verify the credential before each protected RPC method.
-- [ ] Return an actor only after successful authentication.
-- [ ] Pass the verified actor from the RPC adapter to the guarded domain operation.
-- [ ] Require an explicit actor parameter for protected operations, including internal calls.
-- [ ] Keep actor identity out of context values and global state.
-- [ ] Refuse caller-supplied actor IDs as proof of identity.
-- [ ] Add the bootstrap identity driver.
-- [ ] Put the bootstrap identity implementation in `internal/drivers/bootstrap/identity/`.
-- [ ] Read bootstrap configuration through `internal/config`.
+- [x] Define the actor type and the authentication interface.
+- [x] Use the verified `Source` and `Subject` pair as the actor reference.
+- [x] Keep account management outside core.
+- [x] Verify the credential before each protected RPC method.
+- [x] Return an actor only after successful authentication.
+- [x] Pass the verified actor from the RPC adapter to the guarded domain operation.
+- [x] Require an explicit actor parameter for protected operations, including internal calls.
+- [x] Keep actor identity out of context values and global state.
+- [x] Refuse caller-supplied actor IDs as proof of identity.
+- [x] Add the bootstrap identity driver.
+- [x] Put the bootstrap identity implementation in `internal/drivers/bootstrap/identity/`.
+- [x] Read bootstrap configuration through `internal/config`.
 
 ### 5. Check access in core
 
-- [ ] Define the action, resource, scope, and grant types.
-- [ ] Implement the approved grant record and validate its fields.
-- [ ] Implement the approved grant creation and revocation policies.
-- [ ] Persist grant creation and revocation through core PostgreSQL transactions.
-- [ ] Keep issuer and revocation metadata controlled by the server.
-- [ ] Implement the approved scope kinds and validate parent relationships.
-- [ ] Add authorization fixtures for exact Git ref scopes beneath repository scopes.
-- [ ] Resolve grant scope coverage through trusted resource containment.
-- [ ] Require a policy and a private business handler for each domain operation.
-- [ ] Require a resource resolver when the policy needs resource data.
-- [ ] Resolve resource data through trusted services instead of trusting caller-supplied ownership fields.
-- [ ] Run the access check before the business handler.
-- [ ] Reject operations with missing or unknown policies during platform registration.
-- [ ] Require an explicit policy for public operations.
-- [ ] Use the parent scope for an action that creates a resource.
-- [ ] Refuse access unless a defined rule permits the action.
-- [ ] Refuse unknown actions and unknown scopes.
-- [ ] Refuse the action if the permission check fails.
-- [ ] Apply the same checks to human and agent actors.
-- [ ] Keep permission checks inside the domain operation.
-- [ ] Map authentication and permission errors at the RPC boundary.
-- [ ] Check delegated rights before a future operation issues an agent credential.
+- [x] Define action and grant types, plus scope types with trusted resource bindings.
+- [x] Implement the approved grant record and validate its fields.
+- [x] Implement the approved grant creation and revocation policies.
+- [x] Persist grant creation and revocation through core PostgreSQL transactions.
+- [x] Keep issuer and revocation metadata controlled by the server.
+- [x] Implement the approved scope kinds and validate parent relationships.
+- [x] Add authorization fixtures for exact Git ref scopes beneath repository scopes.
+- [x] Resolve grant scope coverage through trusted resource containment.
+- [x] Require a policy and a private business handler for each domain operation.
+- [x] Require a resource resolver when the policy needs resource data.
+- [x] Resolve resource data through trusted services instead of trusting caller-supplied ownership fields.
+- [x] Run the access check before the business handler.
+- [x] Reject operations with missing or unknown policies during platform registration.
+- [x] Require an explicit policy for public operations.
+- [x] Use the parent scope for an action that creates a resource.
+- [x] Refuse access unless a defined rule permits the action.
+- [x] Refuse unknown actions and unknown scopes.
+- [x] Refuse the action if the permission check fails.
+- [x] Apply the same checks to human and agent actors.
+- [x] Keep permission checks inside the domain operation.
+- [x] Map authentication and permission errors at the RPC boundary.
+- [x] Require a delegation policy before adding an operation that issues agent credentials.
 
 ### 6. Enforce the rules with the custom Go analyzer
 
 Use resolved Go symbols and receiver types.
 Do not approve a call because its type name contains `Service`.
 
-- [ ] Require endpoint comments and explicit access policies.
-- [ ] Find missing, repeated, or invalid endpoint bindings.
-- [ ] Require each operation's business handler to belong to `internal/core/domain/` or one of its subpackages.
-- [ ] Require an explicit authorization policy for each domain operation.
-- [ ] Find RPC adapters that bypass the guarded domain operation.
-- [ ] Refuse raw handler references outside the approved operation definitions.
-- [ ] Refuse direct calls to raw business handlers in production code.
-- [ ] Find endpoint registrations that bypass platform authentication.
-- [ ] Permit domain calls only to approved services, ports, and explicit helpers.
-- [ ] Permit boolean decisions with `!`, `&&`, and `||`.
-- [ ] Refuse raw comparisons, arithmetic, string calculations, and similar computations in domain handlers.
-- [ ] Find prohibited computations outside branch conditions as well as inside them.
-- [ ] Permit `if` and `else` for business branches.
-- [ ] Refuse loops, switches, goroutines, and channel operations in domain handlers.
-- [ ] Permit local bindings, field reads, argument passing, and typed result construction.
-- [ ] Permit error returns, `err == nil`, `err != nil`, `errors.Is`, and `errors.As`.
-- [ ] Refuse arbitrary function variables and anonymous function calls in domain handlers.
-- [ ] Refuse direct file, database, network, environment, and process operations in domain handlers.
-- [ ] Exclude tests and generated code from the domain restrictions.
-- [ ] Apply the domain restrictions to `internal/core/domain/` and all its subpackages.
-- [ ] Keep domain services and adapters outside the restricted domain package.
-- [ ] Add valid and invalid fixtures for each rule.
-- [ ] Add fixtures for import aliases and attempted bypasses.
-- [ ] Add the checks to `pnpm check` and CI.
+- [x] Require endpoint comments and explicit access policies.
+- [x] Find missing, repeated, or invalid endpoint bindings.
+- [x] Require each operation's business handler to belong to `internal/core/domain/` or one of its subpackages.
+- [x] Require an explicit authorization policy for each domain operation.
+- [x] Find RPC adapters that bypass the guarded domain operation.
+- [x] Refuse raw handler references outside the approved operation definitions.
+- [x] Refuse direct calls to raw business handlers in production code.
+- [x] Find endpoint registrations that bypass platform authentication.
+- [x] Permit domain calls only to approved services, ports, and explicit helpers.
+- [x] Permit boolean decisions with `!`, `&&`, and `||`.
+- [x] Refuse raw comparisons, arithmetic, string calculations, and similar computations in domain handlers.
+- [x] Find prohibited computations outside branch conditions as well as inside them.
+- [x] Permit `if` and `else` for business branches.
+- [x] Refuse loops, switches, goroutines, and channel operations in domain handlers.
+- [x] Permit local bindings, field reads, argument passing, and typed result construction.
+- [x] Permit error returns, `err == nil`, `err != nil`, `errors.Is`, and `errors.As`.
+- [x] Refuse arbitrary function variables and anonymous function calls in domain handlers.
+- [x] Refuse direct file, database, network, environment, and process operations in domain handlers.
+- [x] Exclude tests and generated code from the domain restrictions.
+- [x] Apply the domain restrictions to `internal/core/domain/` and all its subpackages.
+- [x] Keep domain services and adapters outside the restricted domain package.
+- [x] Add valid and invalid fixtures for each rule.
+- [x] Add fixtures for import aliases and attempted bypasses.
+- [x] Add the checks to `pnpm check` and CI.
 
 The analyzer checks code structure.
 Access tests must also check the permission decisions.
 
 ### 7. Verify the complete request path
 
-- [ ] Keep the dedicated Playwright workspace at `packages/e2e/` self-contained and portable.
-- [ ] Add an API-only Playwright project with real RPC requests against the Go server and PostgreSQL.
-- [ ] Put most behavioral scenarios in Playwright; keep focused unit tests for policies, guards, and analyzer fixtures.
-- [ ] Isolate test database state and credentials from development data.
-- [ ] Collect Go coverage from the real server process during Playwright tests.
-- [ ] Produce unit, E2E, and combined coverage profiles, HTML reports, and machine-readable summaries.
-- [ ] Merge covered statements rather than averaging unit and E2E percentages.
-- [ ] Use the same handwritten application package set for all three coverage reports.
+- [x] Keep the dedicated Playwright workspace at `packages/e2e/` self-contained and portable.
+- [x] Add an API-only Playwright project with real RPC requests against the Go server and PostgreSQL.
+- [x] Put most behavioral scenarios in Playwright; keep focused unit tests for policies, guards, and analyzer fixtures.
+- [x] Isolate test database state and credentials from development data.
+- [x] Collect Go coverage from the real server process during Playwright tests.
+- [x] Produce unit, E2E, and combined coverage profiles, HTML reports, and machine-readable summaries.
+- [x] Merge covered statements rather than averaging unit and E2E percentages.
+- [x] Use the same handwritten application package set for all three coverage reports.
 - [ ] Run the test suites and coverage collection in CI and publish report artifacts.
 
-- [ ] Verify that the Compose service becomes healthy.
-- [ ] Verify that migrations prepare an empty database.
-- [ ] Verify that actor references and permission data survive application and database restarts.
-- [ ] Verify that database errors prevent protected actions.
-- [ ] Verify that the public system endpoint works without a credential.
-- [ ] Verify that a protected endpoint refuses missing and invalid credentials.
-- [ ] Verify that a valid credential produces the correct actor.
-- [ ] Verify that an allowed actor can complete a protected action.
-- [ ] Verify that the approved protected endpoint returns persisted data only after authorization.
-- [ ] Verify the complete create, get, list, and revoke lifecycle through real RPC requests.
-- [ ] Verify that the server assigns issuer and creation metadata from trusted values.
-- [ ] Verify that revocation records the verified actor and timestamp.
-- [ ] Verify that revoked records remain inspectable by authorized callers.
-- [ ] Verify that a caller cannot grant actions or scope coverage it does not hold.
-- [ ] Verify that a branch-limited caller cannot grant repository-wide access.
-- [ ] Verify that grant-management rights cannot be escalated through grant creation.
-- [ ] Verify that denied mutations and database failures leave grant state unchanged.
-- [ ] Verify that a denied actor cannot complete the action.
-- [ ] Verify that grants match only the intended actor, action, and scope.
-- [ ] Verify that grants cover contained resources and exclude unrelated scopes.
-- [ ] Verify that scope grants do not apply to ancestors or sibling scopes.
-- [ ] Verify that invalid scope relationships prevent protected actions.
-- [ ] Verify that a Git ref grant excludes other refs and repositories.
-- [ ] Verify that a ref update grant does not permit repository settings changes.
-- [ ] Verify that narrow grants do not cancel broader grants.
-- [ ] Verify that a revoked grant cannot permit subsequent access checks.
-- [ ] Verify that a permission error prevents the protected action.
-- [ ] Verify that a refused request never calls the business handler.
-- [ ] Verify that a failed access check never calls the business handler.
-- [ ] Verify that platform registration rejects operations without an explicit policy.
-- [ ] Verify that the caller cannot choose another actor through request data.
-- [ ] Verify that direct domain calls require the same access checks.
-- [ ] Verify that agents do not inherit their creator's credentials or rights automatically.
-- [ ] Verify that generated bindings and the endpoint reference are current.
-- [ ] Run `pnpm check`, `pnpm test`, `pnpm test:e2e`, and `pnpm build`.
-- [ ] Update `README.md` and `AGENTS.md` to describe the implemented rules.
+- [x] Verify that the Compose service becomes healthy.
+- [x] Verify that migrations prepare an empty database.
+- [x] Verify that actor references and permission data survive application and database restarts.
+- [x] Verify that database errors prevent protected actions.
+- [x] Verify that the public system endpoint works without a credential.
+- [x] Verify that a protected endpoint refuses missing and invalid credentials.
+- [x] Verify that a valid credential produces the correct actor.
+- [x] Verify that an allowed actor can complete a protected action.
+- [x] Verify that the approved protected endpoint returns persisted data only after authorization.
+- [x] Verify the complete create, get, list, and revoke lifecycle through real RPC requests.
+- [x] Verify that the server assigns issuer and creation metadata from trusted values.
+- [x] Verify that revocation records the verified actor and timestamp.
+- [x] Verify that revoked records remain inspectable by authorized callers.
+- [x] Verify that a caller cannot grant actions or scope coverage it does not hold.
+- [x] Verify that a branch-limited caller cannot grant repository-wide access.
+- [x] Verify that grant-management rights cannot be escalated through grant creation.
+- [x] Verify that denied mutations and database failures leave grant state unchanged.
+- [x] Verify that a denied actor cannot complete the action.
+- [x] Verify that grants match only the intended actor, action, and scope.
+- [x] Verify that grants cover contained resources and exclude unrelated scopes.
+- [x] Verify that scope grants do not apply to ancestors or sibling scopes.
+- [x] Verify that invalid scope relationships prevent protected actions.
+- [x] Verify that a Git ref grant excludes other refs and repositories.
+- [x] Verify that a ref update grant does not permit repository settings changes.
+- [x] Verify that narrow grants do not cancel broader grants.
+- [x] Verify that a revoked grant cannot permit subsequent access checks.
+- [x] Verify that a permission error prevents the protected action.
+- [x] Verify that a refused request never calls the business handler.
+- [x] Verify that a failed access check never calls the business handler.
+- [x] Verify that platform registration rejects operations without an explicit policy.
+- [x] Verify that the caller cannot choose another actor through request data.
+- [x] Verify that direct domain calls require the same access checks.
+- [x] Verify that agents do not inherit their creator's credentials or rights automatically.
+- [x] Verify that generated bindings and the endpoint reference are current.
+- [x] Run `pnpm check`, `pnpm test`, `pnpm test:e2e`, and `pnpm build`.
+- [x] Update `README.md` and `AGENTS.md` to describe the implemented rules.
 
 ## Definition of done
 
@@ -665,7 +665,7 @@ Plan approval alone does not complete the feature.
 This PR builds the platform authorization foundation and the complete grant management RPC lifecycle.
 Git ref scopes are implemented and tested as authorization boundaries.
 Git push handling and live branch management are later features.
-Grant creation and revocation APIs are required; their policy review must finish before implementation.
+Grant creation and revocation APIs implement the agreed mutation policies.
 External identity providers, login screens, and session management are later features.
 Agent execution, chat, and the builder agent are later features.
 

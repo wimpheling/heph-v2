@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"github.com/wimpheling/heph-v2/internal/core/authorization"
-	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
 	"io"
 	"log/slog"
 	"net"
@@ -13,6 +11,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/wimpheling/heph-v2/internal/core/authorization"
+	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
 
 	"connectrpc.com/connect"
 	systemv1 "github.com/wimpheling/heph-v2/gen/heph/system/v1"

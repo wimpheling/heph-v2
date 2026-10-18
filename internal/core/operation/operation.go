@@ -52,8 +52,7 @@ func (o *Operation[I, O]) Validate() error {
 	}
 	return nil
 }
-func (o *Operation[I, O]) IsPublic() bool               { return o.policy.public }
-func (o *Operation[I, O]) Action() authorization.Action { return o.policy.action }
+func (o *Operation[I, O]) IsPublic() bool { return o.policy.public }
 func (o *Operation[I, O]) Execute(ctx context.Context, actor identity.ActorRef, input I) (O, error) {
 	var result O
 	if err := o.Validate(); err != nil {

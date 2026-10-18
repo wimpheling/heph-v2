@@ -2,7 +2,90 @@ import { expect, test } from "@playwright/test";
 import { spawn } from "node:child_process";
 import pg from "pg";
 import { databaseURL, schema, binary, root, serverEnv } from "../../harness/config.mjs";
-import { admin, agent, actor, platform, scope, grant, revoke, rpc, ok } from "./helpers.js";
+import { admin, agent, alice, actor, platform, scope, grant, revoke, rpc, ok } from "./helpers.js";
+
+test("a database failure at commit rolls back the assignment and discards its result", async ({
+  request,
+}) => {
+  const client = new pg.Client({ connectionString: databaseURL });
+  await client.connect();
+  await client.query('SET search_path TO "' + schema + '"');
+  await client.query(`
+    CREATE FUNCTION e2e_fail_commit() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF NEW.grantee_subject = 'rollback-probe' THEN RAISE EXCEPTION 'injected commit failure'; END IF;
+      RETURN NEW;
+    END $$;
+    CREATE CONSTRAINT TRIGGER e2e_commit_failure AFTER INSERT ON grants
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION e2e_fail_commit();
+  `);
+  try {
+    const result = await rpc(
+      request,
+      "CreateGrant",
+      {
+        grantee: { source: "e2e", subject: "rollback-probe" },
+        action: "authorization.grants.read",
+        scope: platform,
+      },
+      admin.token,
+    );
+    expect(result.status()).toBe(503);
+    expect((await result.json()).grant).toBeUndefined();
+    const persisted = await client.query(
+      "SELECT count(*)::int AS total FROM grants WHERE grantee_subject='rollback-probe'",
+    );
+    expect(persisted.rows[0].total).toBe(0);
+  } finally {
+    await client.query(
+      "DROP TRIGGER e2e_commit_failure ON grants; DROP FUNCTION e2e_fail_commit()",
+    );
+    await client.end();
+  }
+});
+
+test("a queued mutation observes a preceding revocation instead of using stale rights", async ({
+  request,
+}) => {
+  const branch = scope("GIT_REF", "branch-a");
+  const manage = await grant(request, agent, "authorization.grants.create", branch);
+  const update = await grant(request, agent, "git.ref.update", branch);
+  const client = new pg.Client({ connectionString: databaseURL });
+  await client.connect();
+  await client.query("BEGIN; SELECT pg_advisory_xact_lock(728492317)");
+  const waiting = async () => {
+    // Activity snapshots are cached for this transaction; refresh each observation.
+    await client.query("SELECT pg_stat_clear_snapshot()");
+    const result = await client.query(
+      "SELECT count(*)::int AS total FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE 'SELECT pg_advisory_xact_lock%'",
+    );
+    return result.rows[0].total as number;
+  };
+  let pendingRevoke;
+  let pendingCreate;
+  try {
+    pendingRevoke = rpc(request, "RevokeGrant", { id: update.id }, admin.token);
+    await expect.poll(waiting).toBe(1);
+    pendingCreate = rpc(
+      request,
+      "CreateGrant",
+      { grantee: actor(alice), action: "git.ref.update", scope: branch },
+      agent.token,
+    );
+    await expect.poll(waiting).toBe(2);
+    await client.query("COMMIT");
+    expect((await pendingRevoke).status()).toBe(200);
+    const denied = await pendingCreate;
+    expect(denied.status()).toBe(403);
+    expect((await denied.json()).code).toBe("permission_denied");
+  } finally {
+    await client.query("ROLLBACK");
+    await Promise.allSettled([pendingRevoke, pendingCreate]);
+    await client.end();
+    await revoke(request, update.id);
+    await revoke(request, manage.id);
+  }
+});
 
 test("permission storage errors fail closed without persisting a grant", async ({ request }) => {
   const client = new pg.Client({ connectionString: databaseURL });

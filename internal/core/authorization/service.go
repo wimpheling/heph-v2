@@ -133,7 +133,7 @@ func decodePage(input ListInput) (string, error) {
 		return "", ErrInvalid
 	}
 	var cursor pageCursor
-	if json.Unmarshal(raw, &cursor) != nil || cursor.Scope != input.Scope || cursor.After == "" || len(cursor.After) > 128 {
+	if json.Unmarshal(raw, &cursor) != nil || cursor.Scope != input.Scope || !validID(cursor.After) {
 		return "", ErrInvalid
 	}
 	return cursor.After, nil
@@ -157,7 +157,7 @@ func ListScope(_ context.Context, input ListInput, _ *Service) (ScopeRef, error)
 	return input.Scope, err
 }
 func StoredScope(ctx context.Context, input GrantInput, s *Service) (ScopeRef, error) {
-	if input.ID == "" || len(input.ID) > 128 {
+	if !validID(string(input.ID)) {
 		return ScopeRef{}, ErrInvalid
 	}
 	record, err := s.Get(ctx, input)

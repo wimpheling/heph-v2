@@ -3,13 +3,17 @@ package bad
 import (
 	"context"
 	"fmt"
+	"os"
+	"unapproved"
+
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	"github.com/wimpheling/heph-v2/internal/core/identity"
 	op "github.com/wimpheling/heph-v2/internal/core/operation"
-	"os"
 )
 
 func comparisons(input a.ListInput) {
+	isAdmin := input.Role == "admin" // want "domain computations belong"
+	_ = isAdmin
 	if input.Role == "admin" { // want "domain computations belong"
 	}
 	value := input.Count + 1 // want "domain computations belong"
@@ -43,7 +47,7 @@ func Exported(ctx context.Context, actor identity.ActorRef, input a.ListInput, s
 	return service.Create(ctx, actor, input)
 }
 
-var leaked = Exported // want "raw domain handlers"
+var leaked = Exported // want "raw domain handlers" "mutable global state"
 func raw(ctx context.Context, actor identity.ActorRef, input a.ListInput, service *a.Service) (int, error) {
 	return Exported(ctx, actor, input, service) // want "domain calls require" "raw domain handlers"
 }
@@ -58,4 +62,23 @@ func FakeAction(service *a.Service) *op.Operation[a.ListInput, int] {
 	return op.Define(service, op.Require(a.Action("invented"), a.StoredScope), raw) // want "policies require a registered" "domain calls require"
 }
 
-var fake = op.Operation[a.ListInput, int]{} // want "construct operations and policies"
+var fake = op.Operation[a.ListInput, int]{} // want "construct operations and policies" "mutable global state"
+
+func init() {} // want "unguarded initialization"
+
+func namedServiceIsNotApproved(service unapproved.Service) {
+	service.Get() // want "domain calls require"
+}
+func concurrency(ch chan bool) {
+	go fmt.Println("bad")    // want "loops, switches" "domain calls require"
+	defer fmt.Println("bad") // want "loops, switches" "domain calls require"
+	ch <- true               // want "loops, switches"
+	select {                 // want "loops, switches"
+	case <-ch: // want "domain computations belong"
+	}
+}
+func typeSwitch(value any) {
+	switch value.(type) { // want "loops, switches" "domain computations belong"
+	case bool:
+	}
+}

@@ -108,7 +108,11 @@ func (s *Store) Transaction(ctx context.Context, fn func(a.Store) error) error {
 	if err != nil {
 		return storageError(err)
 	}
-	defer tx.Rollback(context.WithoutCancel(ctx)) // Rollback after commit is harmless.
+	defer func() {
+		rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = tx.Rollback(rollbackCtx) // Rollback after commit is harmless.
+	}()
 	// Every authorization decision and mutation uses this lock before reading.
 	// Read-committed snapshots then observe every preceding committed revocation.
 	if _, err = tx.Exec(ctx, "SELECT pg_advisory_xact_lock(728492317)"); err != nil {

@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	pb "github.com/wimpheling/heph-v2/gen/heph/authorization/v1"
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	"github.com/wimpheling/heph-v2/internal/core/domain/grants"

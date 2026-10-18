@@ -1,8 +1,9 @@
 package rpc
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	generated "github.com/wimpheling/heph-v2/gen/heph/test/v1/testv1connect"
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	bad "github.com/wimpheling/heph-v2/internal/core/domain/bad"
@@ -18,11 +19,12 @@ func output(int) *int                 { return nil }
 type Service struct {
 	binding *p.Binding[int, int, a.ListInput, int]
 }
+type RequestAlias = connect.Request[int]
 
 func (r Service) Good(ctx context.Context, req *connect.Request[int]) (int, error) {
 	return r.binding.Call(ctx, req)
 }
-func (r Service) Missing(ctx context.Context, req *connect.Request[int]) (int, error) { // want "exactly one typed endpoint binding" "RPC adapters must delegate"
+func (r Service) Missing(ctx context.Context, req *RequestAlias) (int, error) { // want "exactly one typed endpoint binding" "RPC adapters must delegate"
 	return 0, nil
 }
 func (r Service) Repeated(ctx context.Context, req *connect.Request[int]) (int, error) { // want "exactly one typed endpoint binding"

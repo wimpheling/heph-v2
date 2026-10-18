@@ -1,8 +1,9 @@
 package platform
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	a "github.com/wimpheling/heph-v2/internal/core/authorization"
 	op "github.com/wimpheling/heph-v2/internal/core/operation"
 )

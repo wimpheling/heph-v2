@@ -102,3 +102,46 @@ GetSystemInfo returns public server metadata. It has no expected application err
 | `name` | `string` | Name is the application name. |
 | `version` | `string` | Version is the server build version. |
 
+## Shared message types
+
+### heph.authorization.v1.ActorRef
+
+ActorRef is an opaque source-qualified identity; it is never proof of authentication.
+
+| Field | Description |
+| --- | --- |
+| `source` | Source is the trusted identity namespace. |
+| `subject` | Subject is the stable identifier inside the source. |
+
+### heph.authorization.v1.ScopeRef
+
+ScopeRef identifies a stored scope; its parent is resolved from trusted storage.
+
+| Field | Description |
+| --- | --- |
+| `kind` | Kind is the registered boundary kind. |
+| `id` | Id is the stable internal scope identifier. |
+
+### heph.authorization.v1.Grant
+
+Grant is an immutable assignment. Its audit fields are assigned by the server.
+
+| Field | Description |
+| --- | --- |
+| `id` | Id is the server-assigned grant identifier. |
+| `grantee` | Grantee receives the permission. |
+| `action` | Action is an exact registered action name. |
+| `scope` | Scope identifies where the action applies, including descendants. |
+| `granted_by` | GrantedBy is the verified caller that issued the grant. |
+| `created_at` | CreatedAt is the server-assigned creation timestamp. |
+
+### heph.authorization.v1.Revocation
+
+Revocation records removal of a grant from access decisions.
+
+| Field | Description |
+| --- | --- |
+| `grant_id` | GrantId identifies the immutable grant. |
+| `revoked_by` | RevokedBy is the verified caller that first revoked it. |
+| `revoked_at` | RevokedAt is the original server-assigned revocation time. |
+

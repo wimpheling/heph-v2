@@ -4,9 +4,10 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
 	"net/netip"
 	"os"
+
+	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
 )
 
 type Config struct {

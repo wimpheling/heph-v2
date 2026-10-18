@@ -2,8 +2,9 @@
 package rpc
 
 import (
-	"connectrpc.com/connect"
 	"context"
+
+	"connectrpc.com/connect"
 	systemv1 "github.com/wimpheling/heph-v2/gen/heph/system/v1"
 	"github.com/wimpheling/heph-v2/internal/core"
 	"github.com/wimpheling/heph-v2/internal/core/domain/system"

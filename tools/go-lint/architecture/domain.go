@@ -4,9 +4,10 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"golang.org/x/tools/go/analysis"
 	"strconv"
 	"strings"
+
+	"golang.org/x/tools/go/analysis"
 )
 
 const domainPath = module + "/internal/core/domain"
@@ -42,11 +43,11 @@ func operationFactory(f *types.Func) bool {
 	if !ok || sig.Results().Len() != 1 {
 		return false
 	}
-	pointer, ok := sig.Results().At(0).Type().(*types.Pointer)
+	pointer, ok := types.Unalias(sig.Results().At(0).Type()).(*types.Pointer)
 	if !ok {
 		return false
 	}
-	named, ok := pointer.Elem().(*types.Named)
+	named, ok := types.Unalias(pointer.Elem()).(*types.Named)
 	return ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == operationPath && named.Obj().Name() == "Operation"
 }
 func directArgument(parents []ast.Node, index int, pass *analysis.Pass, path, name string) bool {
@@ -55,6 +56,14 @@ func directArgument(parents []ast.Node, index int, pass *analysis.Pass, path, na
 	}
 	call, ok := parents[len(parents)-2].(*ast.CallExpr)
 	return ok && index < len(call.Args) && call.Args[index] == parents[len(parents)-1] && isFunction(function(pass, call.Fun), path, name)
+}
+func requestType(typ types.Type) bool {
+	pointer, ok := types.Unalias(typ).(*types.Pointer)
+	if !ok {
+		return false
+	}
+	named, ok := types.Unalias(pointer.Elem()).(*types.Named)
+	return ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == "connectrpc.com/connect" && named.Obj().Name() == "Request"
 }
 func allowedDomainCall(f *types.Func) bool {
 	if f == nil || f.Pkg() == nil {
@@ -100,12 +109,18 @@ func checkArchitecture(pass *analysis.Pass) {
 		}
 		inDomain := within(pass.Pkg.Path(), domainPath)
 		for _, decl := range file.Decls {
+			if global, ok := decl.(*ast.GenDecl); ok && inDomain && global.Tok == token.VAR {
+				pass.Reportf(global.Pos(), "domain packages cannot declare mutable global state")
+			}
 			fn, ok := decl.(*ast.FuncDecl)
 			if !ok || fn.Body == nil {
 				continue
 			}
 			obj, _ := pass.TypesInfo.Defs[fn.Name].(*types.Func)
 			if inDomain {
+				if fn.Name.Name == "init" {
+					pass.Reportf(fn.Pos(), "domain packages cannot run unguarded initialization")
+				}
 				if operationFactory(obj) {
 					valid := false
 					if len(fn.Body.List) == 1 {
@@ -127,7 +142,7 @@ func checkArchitecture(pass *analysis.Pass) {
 			}
 			if pass.Pkg.Path() == module+"/internal/rpc" && fn.Recv != nil && obj != nil {
 				sig := obj.Type().(*types.Signature)
-				if sig.Params().Len() == 2 && strings.Contains(sig.Params().At(1).Type().String(), "connect.Request[") {
+				if sig.Params().Len() == 2 && requestType(sig.Params().At(1).Type()) {
 					rpcMethods[fn.Name.Name] = fn.Pos()
 					valid := false
 					if len(fn.Body.List) == 1 {
@@ -253,7 +268,7 @@ func checkArchitecture(pass *analysis.Pass) {
 				}
 			case *ast.CompositeLit:
 				typ := pass.TypesInfo.TypeOf(n)
-				if named, ok := typ.(*types.Named); ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == operationPath && pass.Pkg.Path() != operationPath {
+				if named, ok := types.Unalias(typ).(*types.Named); ok && named.Obj().Pkg() != nil && named.Obj().Pkg().Path() == operationPath && pass.Pkg.Path() != operationPath {
 					pass.Reportf(n.Pos(), "construct operations and policies only through explicit domain operation definitions")
 				}
 			case *ast.Ident:
@@ -263,10 +278,23 @@ func checkArchitecture(pass *analysis.Pass) {
 				}
 				// Walk through selectors to find the expression that owns this function reference.
 				refs := parents
-				if len(refs) > 1 {
-					if selector, ok := refs[len(refs)-2].(*ast.SelectorExpr); ok && selector.Sel == n {
-						refs = refs[:len(refs)-1]
+				for len(refs) > 1 {
+					current := refs[len(refs)-1]
+					unwrap := false
+					switch parent := refs[len(refs)-2].(type) {
+					case *ast.SelectorExpr:
+						unwrap = parent.Sel == current
+					case *ast.ParenExpr:
+						unwrap = parent.X == current
+					case *ast.IndexExpr:
+						unwrap = parent.X == current
+					case *ast.IndexListExpr:
+						unwrap = parent.X == current
 					}
+					if !unwrap {
+						break
+					}
+					refs = refs[:len(refs)-1]
 				}
 				if inDomain && !within(f.Pkg().Path(), domainPath) {
 					called := false
