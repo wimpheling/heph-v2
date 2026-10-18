@@ -86,7 +86,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Treat organizations as ownership scopes.
 - [x] Pass the actor explicitly to each protected domain operation.
 - [x] Keep session IDs, credential IDs, and run IDs separate from actor references.
-- [ ] Keep the permission engine in core.
+- [x] Keep the permission engine in `internal/core/authorization`.
 - [ ] Supply identity and permission data through injected interfaces.
 - [ ] Start with one configured bootstrap user and a bootstrap credential.
 - [ ] Define ownership rights and explicit grants for the first access checks.
@@ -145,6 +145,16 @@ An actor retains its reference across sessions, credential rotations, and runs.
 Permissions attach to the actor reference.
 Keep session, credential, and run identifiers available for separate tracing.
 This decision does not add session management or agent execution to this feature.
+
+## Confirmed permission engine boundary
+
+Keep permission rules in `internal/core/authorization`.
+The engine evaluates ownership, grants, actions, and scopes to permit or refuse access.
+Drivers supply the required data through interfaces.
+The guarded domain operation calls the engine before its private business handler.
+RPC callers and internal callers use the same rules.
+Keep HTTP, ConnectRPC, generated transport types, SQL, and PostgreSQL types outside the permission engine.
+Test permission decisions without a database.
 
 ## Work steps
 
