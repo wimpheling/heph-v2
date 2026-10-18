@@ -5,10 +5,14 @@ managed:
     - file_option: go_package_prefix
       value: github.com/wimpheling/heph-v2/gen
 plugins:
+  - local: [go, run, ./tools/protoc-gen-heph]
+    out: .
+    strategy: all
   - local: protoc-gen-es
     out: packages/contracts/src/gen
     opt:
       - target=ts
+      - erasable_syntax=true
   - local: [go, tool, protoc-gen-go]
     out: gen
     opt:

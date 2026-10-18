@@ -6,6 +6,7 @@ import (
 )
 
 func TestFromEnv(t *testing.T) {
+	t.Setenv("HEPH_BOOTSTRAP_IDENTITIES", `[{"source":"test","subject":"admin","token":"unit-test-credential-placeholder"}]`)
 	for _, tc := range []struct {
 		name    string
 		value   string

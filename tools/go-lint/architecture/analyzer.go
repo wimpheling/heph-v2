@@ -20,6 +20,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	checkArchitecture(pass)
 	for _, file := range pass.Files {
 		if ast.IsGenerated(file) {
 			continue

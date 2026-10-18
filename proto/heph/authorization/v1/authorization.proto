@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package heph.authorization.v1;
+
+import "google/protobuf/timestamp.proto";
+import "heph/platform/v1/options.proto";
+
+// AuthorizationService manages immutable grant assignments and revocations.
+service AuthorizationService {
+  // CreateGrant assigns an action within a scope. Requires authorization.grants.create and the delegated action.
+  // Errors: unauthenticated, permission_denied, invalid_argument, not_found, already_exists, unavailable.
+  rpc CreateGrant(CreateGrantRequest) returns (CreateGrantResponse) {
+    option (heph.platform.v1.authentication) = AUTHENTICATION_REQUIRED;
+  }
+  // GetGrant reads one grant including revocation. Requires authorization.grants.read on its stored scope.
+  // Errors: unauthenticated, permission_denied, invalid_argument, not_found, unavailable.
+  rpc GetGrant(GetGrantRequest) returns (GetGrantResponse) {
+    option (heph.platform.v1.authentication) = AUTHENTICATION_REQUIRED;
+  }
+  // ListGrants reads active grants attached directly to a scope. Requires authorization.grants.read.
+  // Errors: unauthenticated, permission_denied, invalid_argument, not_found, unavailable.
+  rpc ListGrants(ListGrantsRequest) returns (ListGrantsResponse) {
+    option (heph.platform.v1.authentication) = AUTHENTICATION_REQUIRED;
+  }
+  // RevokeGrant records an idempotent revocation. Requires authorization.grants.revoke on the stored scope.
+  // Errors: unauthenticated, permission_denied, invalid_argument, not_found, unavailable.
+  rpc RevokeGrant(RevokeGrantRequest) returns (RevokeGrantResponse) {
+    option (heph.platform.v1.authentication) = AUTHENTICATION_REQUIRED;
+  }
+}
+
+// ActorRef is an opaque source-qualified identity; it is never proof of authentication.
+message ActorRef {
+  // Source is the trusted identity namespace.
+  string source = 1;
+  // Subject is the stable identifier inside the source.
+  string subject = 2;
+}
+
+// ScopeKind declares an explicitly supported authorization boundary.
+enum ScopeKind {
+  SCOPE_KIND_UNSPECIFIED = 0;
+  SCOPE_KIND_PLATFORM = 1;
+  SCOPE_KIND_PERSONAL = 2;
+  SCOPE_KIND_ORGANIZATION = 3;
+  SCOPE_KIND_PROJECT = 4;
+  SCOPE_KIND_RESOURCE = 5;
+  SCOPE_KIND_GIT_REF = 6;
+}
+
+// ScopeRef identifies a stored scope; its parent is resolved from trusted storage.
+message ScopeRef {
+  // Kind is the registered boundary kind.
+  ScopeKind kind = 1;
+  // Id is the stable internal scope identifier.
+  string id = 2;
+}
+
+// Grant is an immutable assignment. Its audit fields are assigned by the server.
+message Grant {
+  // Id is the server-assigned grant identifier.
+  string id = 1;
+  // Grantee receives the permission.
+  ActorRef grantee = 2;
+  // Action is an exact registered action name.
+  string action = 3;
+  // Scope identifies where the action applies, including descendants.
+  ScopeRef scope = 4;
+  // GrantedBy is the verified caller that issued the grant.
+  ActorRef granted_by = 5;
+  // CreatedAt is the server-assigned creation timestamp.
+  google.protobuf.Timestamp created_at = 6;
+}
+
+// Revocation records removal of a grant from access decisions.
+message Revocation {
+  // GrantId identifies the immutable grant.
+  string grant_id = 1;
+  // RevokedBy is the verified caller that first revoked it.
+  ActorRef revoked_by = 2;
+  // RevokedAt is the original server-assigned revocation time.
+  google.protobuf.Timestamp revoked_at = 3;
+}
+
+// CreateGrantRequest contains the editable assignment fields only.
+message CreateGrantRequest {
+  // Grantee identifies the actor receiving access.
+  ActorRef grantee = 1;
+  // Action is an exact registered action that the caller may delegate.
+  string action = 2;
+  // Scope is the full scope coverage to delegate.
+  ScopeRef scope = 3;
+}
+// CreateGrantResponse contains the persisted assignment.
+message CreateGrantResponse {
+  // Grant includes its server-assigned identity and audit fields.
+  Grant grant = 1;
+}
+// GetGrantRequest selects an existing grant by ID.
+message GetGrantRequest {
+  // Id identifies the grant; authorization uses its stored scope.
+  string id = 1;
+}
+// GetGrantResponse includes active and revoked assignments.
+message GetGrantResponse {
+  // Grant is the original immutable assignment.
+  Grant grant = 1;
+  // Revocation is absent while the grant is active.
+  Revocation revocation = 2;
+}
+// ListGrantsRequest selects one exact scope and an optional continuation.
+message ListGrantsRequest {
+  // Scope selects directly attached active grants, not ancestor or descendant assignments.
+  ScopeRef scope = 1;
+  // PageSize defaults to 50 and must be between 1 and 100 when supplied.
+  int32 page_size = 2;
+  // PageToken is an opaque continuation token returned for this exact scope.
+  string page_token = 3;
+}
+// ListGrantsResponse contains one page of active assignments.
+message ListGrantsResponse {
+  // Grants are sorted by their stable IDs.
+  repeated Grant grants = 1;
+  // NextPageToken is empty after the last page.
+  string next_page_token = 2;
+}
+// RevokeGrantRequest selects a grant to revoke without deleting its record.
+message RevokeGrantRequest {
+  // Id identifies the grant; authorization uses its stored scope.
+  string id = 1;
+}
+// RevokeGrantResponse contains the original revocation, including on repeated requests.
+message RevokeGrantResponse {
+  // Revocation identifies who first revoked access and when.
+  Revocation revocation = 1;
+}

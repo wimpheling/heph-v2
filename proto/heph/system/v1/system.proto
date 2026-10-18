@@ -2,14 +2,23 @@ syntax = "proto3";
 
 package heph.system.v1;
 
+import "heph/platform/v1/options.proto";
+
 // Bootstrap contract. Forge and runtime APIs will get their own packages.
 service SystemService {
-  rpc GetSystemInfo(GetSystemInfoRequest) returns (GetSystemInfoResponse);
+  // GetSystemInfo returns public server metadata. It has no expected application errors.
+  rpc GetSystemInfo(GetSystemInfoRequest) returns (GetSystemInfoResponse) {
+    option (heph.platform.v1.authentication) = AUTHENTICATION_PUBLIC;
+  }
 }
 
+// GetSystemInfoRequest has no inputs.
 message GetSystemInfoRequest {}
 
+// GetSystemInfoResponse describes the server.
 message GetSystemInfoResponse {
+  // Name is the application name.
   string name = 1;
+  // Version is the server build version.
   string version = 2;
 }

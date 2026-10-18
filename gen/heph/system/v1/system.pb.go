@@ -7,6 +7,7 @@
 package systemv1
 
 import (
+	_ "github.com/wimpheling/heph-v2/gen/heph/platform/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -21,6 +22,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// GetSystemInfoRequest has no inputs.
 type GetSystemInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -57,10 +59,13 @@ func (*GetSystemInfoRequest) Descriptor() ([]byte, []int) {
 	return file_heph_system_v1_system_proto_rawDescGZIP(), []int{0}
 }
 
+// GetSystemInfoResponse describes the server.
 type GetSystemInfoResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Name is the application name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Version is the server build version.
+	Version       string `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -113,13 +118,13 @@ var File_heph_system_v1_system_proto protoreflect.FileDescriptor
 
 const file_heph_system_v1_system_proto_rawDesc = "" +
 	"\n" +
-	"\x1bheph/system/v1/system.proto\x12\x0eheph.system.v1\"\x16\n" +
+	"\x1bheph/system/v1/system.proto\x12\x0eheph.system.v1\x1a\x1eheph/platform/v1/options.proto\"\x16\n" +
 	"\x14GetSystemInfoRequest\"E\n" +
 	"\x15GetSystemInfoResponse\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion2m\n" +
-	"\rSystemService\x12\\\n" +
-	"\rGetSystemInfo\x12$.heph.system.v1.GetSystemInfoRequest\x1a%.heph.system.v1.GetSystemInfoResponseB\xb6\x01\n" +
+	"\aversion\x18\x02 \x01(\tR\aversion2s\n" +
+	"\rSystemService\x12b\n" +
+	"\rGetSystemInfo\x12$.heph.system.v1.GetSystemInfoRequest\x1a%.heph.system.v1.GetSystemInfoResponse\"\x04\xc8\xf3\x18\x01B\xb6\x01\n" +
 	"\x12com.heph.system.v1B\vSystemProtoP\x01Z9github.com/wimpheling/heph-v2/gen/heph/system/v1;systemv1\xa2\x02\x03HSX\xaa\x02\x0eHeph.System.V1\xca\x02\x0eHeph\\System\\V1\xe2\x02\x1aHeph\\System\\V1\\GPBMetadata\xea\x02\x10Heph::System::V1b\x06proto3"
 
 var (

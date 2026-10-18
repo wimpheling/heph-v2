@@ -2,13 +2,18 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
 	"net/netip"
 	"os"
 )
 
 type Config struct {
-	ListenAddr netip.AddrPort
+	ListenAddr     netip.AddrPort
+	DatabaseURL    string
+	DatabaseSchema string
+	Identities     []bootstrap.Credential
 }
 
 func FromEnv() (Config, error) {
@@ -20,5 +25,23 @@ func FromEnv() (Config, error) {
 	if err != nil {
 		return Config{}, fmt.Errorf("HEPH_LISTEN_ADDR: %w", err)
 	}
-	return Config{ListenAddr: parsed}, nil
+	url := os.Getenv("HEPH_DATABASE_URL")
+	if url == "" {
+		url = "postgresql://heph:heph-local-placeholder@127.0.0.1:5432/heph?sslmode=disable"
+	}
+	schema := os.Getenv("HEPH_DATABASE_SCHEMA")
+	if schema == "" {
+		schema = "public"
+	}
+	var identities []bootstrap.Credential
+	raw := os.Getenv("HEPH_BOOTSTRAP_IDENTITIES")
+	if raw != "" {
+		if err := json.Unmarshal([]byte(raw), &identities); err != nil {
+			return Config{}, fmt.Errorf("HEPH_BOOTSTRAP_IDENTITIES must contain a JSON array of configured identities")
+		}
+		if _, err := bootstrap.New(identities); err != nil {
+			return Config{}, err
+		}
+	}
+	return Config{ListenAddr: parsed, DatabaseURL: url, DatabaseSchema: schema, Identities: identities}, nil
 }
