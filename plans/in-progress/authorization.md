@@ -91,7 +91,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Supply identity and permission data through injected interfaces.
 - [x] Start with one configured bootstrap user and a bootstrap credential.
 - [x] Group drivers under `internal/drivers/bootstrap/` and `internal/drivers/std/`.
-- [ ] Define ownership rights and explicit grants for the first access checks.
+- [x] Use ownership rights and explicit grants for the first access checks.
+- [ ] Confirm the grant record and scope coverage proposed below.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
 ## Confirmed actor reference
@@ -201,6 +202,65 @@ Use `internal/drivers/bootstrap/identity/` for the first identity driver.
 Use `internal/server/` to connect core persistence and replaceable drivers to their interfaces during startup.
 Keep these packages in the root Go module.
 
+## Confirmed access rules
+
+A human or agent owner can manage its owned scope and resources.
+Other actors need a grant for the requested action and scope.
+For organization-owned resources, check the caller's rights within that organization.
+Refuse access when no rule permits the action.
+Creating an agent does not give it access to its creator's resources.
+
+## Proposed grant model
+
+Define these types in `internal/core/authorization`.
+Confirm this model before implementation.
+
+```go
+type GrantID string
+type Action string
+type ScopeID string
+type ScopeKind string
+
+type ScopeRef struct {
+    Kind ScopeKind
+    ID   ScopeID
+}
+
+type Grant struct {
+    ID        GrantID
+    Grantee   ActorRef
+    Action    Action
+    Scope     ScopeRef
+    GrantedBy ActorRef
+    CreatedAt time.Time
+}
+```
+
+`ID` identifies the grant for lookup and revocation.
+`Grantee` identifies the human or agent that receives permission.
+`Action` names one registered operation, such as `repository.write`.
+`Scope` identifies the boundary in which the permission applies.
+`GrantedBy` identifies the actor that issued the grant.
+`CreatedAt` records when the grant was created.
+The issuer and timestamp record provenance; they do not give the grantee additional rights.
+
+Use one grant for each actor, action, and scope combination.
+Accept only registered actions and scope kinds.
+Refuse empty identifiers and invalid actor references.
+Scope IDs are stable internal identifiers.
+Resolve personal scope ownership through the complete actor reference, including its source.
+Do not use an external subject alone as a personal scope ID.
+
+A grant covers its named scope and resources contained within that scope.
+For example, `repository.write` on a project covers repositories in that project.
+Resolve resource containment through trusted core data.
+Do not accept caller-supplied parent scopes as proof of containment.
+Do not match unrelated scopes or actions.
+Use exact action names without wildcard patterns for the first implementation.
+The grant reader must return only active grants.
+After revocation, the grant must not permit subsequent access checks.
+An access grant does not by itself authorize issuing grants to other actors.
+
 ## Work steps
 
 ### 1. Set up PostgreSQL
@@ -269,6 +329,8 @@ Keep these packages in the root Go module.
 ### 5. Check access in core
 
 - [ ] Define the action, resource, scope, and grant types.
+- [ ] Implement the approved grant record and validate its fields.
+- [ ] Resolve grant scope coverage through trusted resource containment.
 - [ ] Require a policy and a private business handler for each domain operation.
 - [ ] Require a resource resolver when the policy needs resource data.
 - [ ] Resolve resource data through trusted services instead of trusting caller-supplied ownership fields.
@@ -328,6 +390,9 @@ Access tests must also check the permission decisions.
 - [ ] Verify that a valid credential produces the correct actor.
 - [ ] Verify that an allowed actor can complete a protected action.
 - [ ] Verify that a denied actor cannot complete the action.
+- [ ] Verify that grants match only the intended actor, action, and scope.
+- [ ] Verify that grants cover contained resources and exclude unrelated scopes.
+- [ ] Verify that a revoked grant cannot permit subsequent access checks.
 - [ ] Verify that a permission error prevents the protected action.
 - [ ] Verify that a refused request never calls the business handler.
 - [ ] Verify that a failed access check never calls the business handler.
