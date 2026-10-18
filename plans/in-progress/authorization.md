@@ -59,8 +59,10 @@ Internal callers must use the same domain operations and access checks.
 ## Decisions to confirm
 
 Confirm these choices before implementation.
+Review one decision at a time.
+After approval, mark the decision complete and explain the next decision.
 
-- [ ] Use `internal/core/domain/` for the restricted domain handlers.
+- [x] Use `internal/core/domain/` for the restricted domain handlers.
 - [ ] Select the approved service packages and port interfaces.
 - [ ] Select the typed form of the endpoint bindings.
 - [ ] Select the protobuf metadata for public access and required authentication.
