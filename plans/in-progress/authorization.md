@@ -87,7 +87,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Pass the actor explicitly to each protected domain operation.
 - [x] Keep session IDs, credential IDs, and run IDs separate from actor references.
 - [x] Keep the permission engine in `internal/core/authorization`.
-- [ ] Supply identity and permission data through injected interfaces.
+- [x] Supply identity and permission data through injected interfaces.
 - [ ] Start with one configured bootstrap user and a bootstrap credential.
 - [ ] Define ownership rights and explicit grants for the first access checks.
 - [ ] Confirm the Go error exceptions and the domain rules below.
@@ -155,6 +155,16 @@ The guarded domain operation calls the engine before its private business handle
 RPC callers and internal callers use the same rules.
 Keep HTTP, ConnectRPC, generated transport types, SQL, and PostgreSQL types outside the permission engine.
 Test permission decisions without a database.
+
+## Confirmed interface wiring
+
+Use an authentication interface to verify credentials and return the actor.
+Use `authorization.GrantReader` to load grants for permission checks.
+At startup, supply the configured identity driver and PostgreSQL grant driver through ordinary Go constructors.
+Core depends on the interfaces and core types.
+Core must not import the driver implementations.
+Unit tests supply test doubles through the same interfaces.
+Do not add a dependency injection framework.
 
 ## Work steps
 
