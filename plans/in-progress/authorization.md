@@ -64,11 +64,11 @@ Confirm these choices before implementation.
 Review one decision at a time.
 After approval, mark the decision complete and explain the next decision.
 
-- [x] Use `internal/core/domain/` for the restricted domain handlers.
+- [x] Use `internal/core/domain/` and all its subpackages for the restricted domain handlers.
 - [x] Use PostgreSQL for persistent identity and permission data.
 - [x] Add a project `compose.yaml` file for local PostgreSQL.
 - [x] Approve `internal/core/authorization` and the `authorization.GrantReader` interface as domain call targets.
-- [ ] Select the typed form of the endpoint bindings.
+- [x] Bind each RPC to a domain function with typed Go references and input and output conversion functions.
 - [ ] Select the protobuf metadata for public access and required authentication.
 - [ ] Use stable actor IDs for humans and agents.
 - [ ] Treat organizations as ownership scopes.
@@ -118,6 +118,8 @@ After approval, mark the decision complete and explain the next decision.
 ### 3. Connect each endpoint to its domain handler
 
 - [ ] Add a typed endpoint binding.
+- [ ] Use actual Go function references instead of handler names stored as strings.
+- [ ] Add typed conversion functions for the RPC request and the domain result.
 - [ ] Require exactly one binding for each RPC method.
 - [ ] Use Go type checks to verify compatible binding types.
 - [ ] Move the system operation behind a domain handler.
@@ -154,7 +156,7 @@ Do not approve a call because its type name contains `Service`.
 
 - [ ] Require endpoint comments and explicit access policies.
 - [ ] Find missing, repeated, or invalid endpoint bindings.
-- [ ] Require each bound handler to belong to the domain package.
+- [ ] Require each bound handler to belong to `internal/core/domain/` or one of its subpackages.
 - [ ] Find RPC adapters that bypass the domain handler.
 - [ ] Find endpoint registrations that bypass platform authentication.
 - [ ] Permit domain calls only to approved services, ports, and explicit helpers.
@@ -168,6 +170,7 @@ Do not approve a call because its type name contains `Service`.
 - [ ] Refuse arbitrary function variables and anonymous function calls in domain handlers.
 - [ ] Refuse direct file, database, network, environment, and process operations in domain handlers.
 - [ ] Exclude tests and generated code from the domain restrictions.
+- [ ] Apply the domain restrictions to `internal/core/domain/` and all its subpackages.
 - [ ] Keep domain services and adapters outside the restricted domain package.
 - [ ] Add valid and invalid fixtures for each rule.
 - [ ] Add fixtures for import aliases and attempted bypasses.
