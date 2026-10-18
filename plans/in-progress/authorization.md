@@ -84,7 +84,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Identify humans and agents with stable `ActorRef` values containing `Source` and `Subject`.
 - [x] Keep user account management in identity drivers, outside core.
 - [x] Treat organizations as ownership scopes.
-- [ ] Pass the actor explicitly to domain operations.
+- [x] Pass the actor explicitly to each protected domain operation.
 - [ ] Keep session IDs, credential IDs, and run IDs separate from actor IDs.
 - [ ] Keep the permission engine in core.
 - [ ] Supply identity and permission data through injected interfaces.
@@ -122,6 +122,17 @@ Humans and agents receive permissions within that scope.
 Each request retains the verified human or agent as its actor.
 For example, Alice creates a repository owned by Acme.
 The authorization check uses Alice's permissions within Acme.
+
+## Confirmed actor parameter
+
+Each protected domain operation receives the verified actor as an explicit parameter.
+For example: `CreateRepository(ctx, actor, input)`.
+Authentication supplies the actor.
+The RPC adapter supplies the translated input.
+The operation's guard checks the actor's permissions before it calls the private handler.
+Internal callers must also supply the actor explicitly.
+Do not retrieve the actor from context values or global state.
+Do not accept request fields as proof of the caller's identity.
 
 ## Work steps
 
@@ -180,6 +191,8 @@ The authorization check uses Alice's permissions within Acme.
 - [ ] Verify the credential before each protected RPC method.
 - [ ] Return an actor only after successful authentication.
 - [ ] Pass the verified actor from the RPC adapter to the guarded domain operation.
+- [ ] Require an explicit actor parameter for protected operations, including internal calls.
+- [ ] Keep actor identity out of context values and global state.
 - [ ] Refuse caller-supplied actor IDs as proof of identity.
 - [ ] Add the bootstrap identity driver.
 - [ ] Read bootstrap configuration through `internal/config`.
