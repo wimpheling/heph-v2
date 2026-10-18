@@ -9,17 +9,21 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/buildssa"
 )
 
 const module = "github.com/wimpheling/heph-v2"
 
 var Analyzer = &analysis.Analyzer{
-	Name: "hepharchitecture",
-	Doc:  "enforce centralized environment reads and transport-independent core logic",
-	Run:  run,
+	Name:     "hepharchitecture",
+	Doc:      "enforce explicit environment configuration and transport-independent core logic",
+	Requires: []*analysis.Analyzer{buildssa.Analyzer},
+	Run:      run,
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	checkArchitecture(pass)
+	checkEnvironmentDefaults(pass)
 	for _, file := range pass.Files {
 		if ast.IsGenerated(file) {
 			continue

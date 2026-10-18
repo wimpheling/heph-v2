@@ -12,17 +12,32 @@ import (
 	"testing"
 	"time"
 
+	"github.com/wimpheling/heph-v2/internal/core/authorization"
+	bootstrap "github.com/wimpheling/heph-v2/internal/drivers/bootstrap/identity"
+
 	"connectrpc.com/connect"
 	systemv1 "github.com/wimpheling/heph-v2/gen/heph/system/v1"
 	"github.com/wimpheling/heph-v2/gen/heph/system/v1/systemv1connect"
 )
 
+func newTestHandler(t *testing.T) http.Handler {
+	t.Helper()
+	auth, err := bootstrap.New([]bootstrap.Credential{{Source: "test", Subject: "admin", Token: "unit-test-credential-placeholder"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewHandler(authorization.New(nil), auth)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return handler
+}
 func TestSystemInfoJSON(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, systemv1connect.SystemServiceGetSystemInfoProcedure, strings.NewReader("{}"))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connect-Protocol-Version", "1")
 	res := httptest.NewRecorder()
-	NewHandler().ServeHTTP(res, req)
+	newTestHandler(t).ServeHTTP(res, req)
 	if res.Code != http.StatusOK {
 		t.Fatalf("status = %d, body: %s", res.Code, res.Body)
 	}
@@ -43,7 +58,7 @@ func TestUnknownRPC(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Connect-Protocol-Version", "1")
 	res := httptest.NewRecorder()
-	NewHandler().ServeHTTP(res, req)
+	newTestHandler(t).ServeHTTP(res, req)
 	if res.Code != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", res.Code)
 	}
@@ -58,7 +73,8 @@ func TestProtocolsAndShutdown(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	result := make(chan error, 1)
-	go func() { result <- serve(ctx, listener, slog.New(slog.NewTextHandler(io.Discard, nil))) }()
+	handler := newTestHandler(t)
+	go func() { result <- serve(ctx, listener, slog.New(slog.NewTextHandler(io.Discard, nil)), handler) }()
 
 	protocols := new(http.Protocols)
 	protocols.SetUnencryptedHTTP2(true)

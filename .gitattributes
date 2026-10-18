@@ -1,0 +1,3 @@
+gen/** linguist-generated=true
+packages/contracts/src/gen/** linguist-generated=true whitespace=-blank-at-eof
+api/endpoints.md linguist-generated=true whitespace=-blank-at-eof

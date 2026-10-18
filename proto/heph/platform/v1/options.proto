@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package heph.platform.v1;
+
+import "google/protobuf/descriptor.proto";
+
+// Authentication declares the required transport identity policy.
+enum Authentication {
+  AUTHENTICATION_UNSPECIFIED = 0;
+  AUTHENTICATION_PUBLIC = 1;
+  AUTHENTICATION_REQUIRED = 2;
+}
+
+extend google.protobuf.MethodOptions {
+  // Every endpoint must declare its authentication policy explicitly.
+  Authentication authentication = 51001;
+}

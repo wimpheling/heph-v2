@@ -3,7 +3,13 @@ import { spawnSync } from "node:child_process";
 // Keep generated bindings and human-maintained docs outside the formatter.
 const result = spawnSync(
   "gofmt",
-  [process.argv.includes("--write") ? "-w" : "-l", "cmd", "internal", "tools/go-lint"],
+  [
+    process.argv.includes("--write") ? "-w" : "-l",
+    "cmd",
+    "internal",
+    "tools/go-lint",
+    "tools/protoc-gen-heph",
+  ],
   { encoding: "utf8" },
 );
 if (result.error) throw result.error;

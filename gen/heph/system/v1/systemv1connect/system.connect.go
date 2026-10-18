@@ -40,6 +40,7 @@ const (
 
 // SystemServiceClient is a client for the heph.system.v1.SystemService service.
 type SystemServiceClient interface {
+	// GetSystemInfo returns public server metadata. It has no expected application errors.
 	GetSystemInfo(context.Context, *connect.Request[v1.GetSystemInfoRequest]) (*connect.Response[v1.GetSystemInfoResponse], error)
 }
 
@@ -75,6 +76,7 @@ func (c *systemServiceClient) GetSystemInfo(ctx context.Context, req *connect.Re
 
 // SystemServiceHandler is an implementation of the heph.system.v1.SystemService service.
 type SystemServiceHandler interface {
+	// GetSystemInfo returns public server metadata. It has no expected application errors.
 	GetSystemInfo(context.Context, *connect.Request[v1.GetSystemInfoRequest]) (*connect.Response[v1.GetSystemInfoResponse], error)
 }
 

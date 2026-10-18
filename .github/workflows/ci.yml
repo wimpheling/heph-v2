@@ -7,6 +7,27 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # All test configuration is explicit. Application code has no env defaults.
+    env:
+      HEPH_E2E_DATABASE_URL: postgresql://heph:heph-local-placeholder@127.0.0.1:5432/heph?sslmode=disable
+      HEPH_E2E_BASE_URL: http://127.0.0.1:18080
+      HEPH_E2E_WEB_URL: http://127.0.0.1:15173
+      HEPH_E2E_API_ONLY: "0"
+      HEPH_E2E_MANAGED: "1"
+    services:
+      postgres:
+        image: postgres:18.3-alpine
+        env:
+          POSTGRES_USER: heph
+          POSTGRES_PASSWORD: heph-local-placeholder
+          POSTGRES_DB: heph
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U heph -d heph"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,21 +40,28 @@ jobs:
           go-version-file: go.mod
       - run: go mod download
       - run: pnpm install --frozen-lockfile
-      - name: Check generated bindings
-        run: |
-          pnpm generate
-          git diff --exit-code -- gen packages/contracts/src/gen
-          test -z "$(git ls-files --others --exclude-standard -- gen packages/contracts/src/gen)"
-      - run: pnpm check
-      - run: pnpm test
+      - name: Check code and generated contracts
+        run: pnpm check
+      - run: pnpm test:coverage:unit
       - run: pnpm build
       - name: Install Playwright browser
         run: pnpm --filter @heph/e2e exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: pnpm test:coverage:e2e
+      - run: pnpm coverage:merge
+      - name: Publish coverage summary
+        run: cat coverage/summary.md >> "$GITHUB_STEP_SUMMARY"
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: packages/e2e/playwright-report/
+          retention-days: 7
+      - name: Upload coverage reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: error
           retention-days: 7

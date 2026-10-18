@@ -29,9 +29,61 @@ function imports(check) {
   };
 }
 
+function property(node, name) {
+  return (
+    node?.type === "MemberExpression" &&
+    (node.computed ? node.property.value === name : node.property.name === name)
+  );
+}
+
+function environmentObject(node) {
+  return (
+    property(node, "env") &&
+    ((node.object.type === "Identifier" && node.object.name === "process") ||
+      (node.object.type === "MetaProperty" && node.object.meta.name === "import"))
+  );
+}
+
+function environmentRead(node) {
+  return node?.type === "MemberExpression" && environmentObject(node.object);
+}
+
 export default {
   meta: { name: "heph" },
   rules: {
+    "no-env-defaults": {
+      meta: {
+        type: "problem",
+        schema: [],
+        messages: {
+          fallback:
+            "Environment variables must not have fallback defaults. Require explicit configuration and fail when missing or empty.",
+        },
+      },
+      create(context) {
+        return {
+          LogicalExpression(node) {
+            if (["??", "||"].includes(node.operator) && environmentRead(node.left))
+              context.report({ node, messageId: "fallback" });
+          },
+          AssignmentExpression(node) {
+            if (["??=", "||="].includes(node.operator) && environmentRead(node.left))
+              context.report({ node, messageId: "fallback" });
+          },
+          ConditionalExpression(node) {
+            if (environmentRead(node.test) && environmentRead(node.consequent))
+              context.report({ node, messageId: "fallback" });
+          },
+          VariableDeclarator(node) {
+            if (node.id.type !== "ObjectPattern" || !environmentObject(node.init)) return;
+            for (const property of node.id.properties) {
+              if (property.value?.type === "AssignmentPattern")
+                context.report({ node: property.value, messageId: "fallback" });
+            }
+          },
+        };
+      },
+    },
     "design-system-boundary": {
       meta: {
         type: "problem",

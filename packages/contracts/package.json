@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./authorization": "./src/gen/heph/authorization/v1/authorization_pb.ts",
     "./system": "./src/gen/heph/system/v1/system_pb.ts"
   },
   "dependencies": {

@@ -28,7 +28,11 @@ function lint(file, source) {
       JSON.stringify({
         categories: { correctness: "off" },
         jsPlugins: [{ name: "heph", specifier: path.join(root, "tools/oxlint/plugin.mjs") }],
-        rules: { "heph/design-system-boundary": "error", "heph/rpc-boundary": "error" },
+        rules: {
+          "heph/design-system-boundary": "error",
+          "heph/rpc-boundary": "error",
+          "heph/no-env-defaults": "error",
+        },
       }),
     );
     const result = spawnSync(process.execPath, [oxlintBin, "-c", config, target], {
@@ -91,6 +95,35 @@ void test("RPC adapter owns Connect imports", () => {
   const result = lint(
     "apps/web/src/app/rpc/system.ts",
     'import { createClient } from "@connectrpc/connect"; export const factory = createClient;',
+  );
+  assert.equal(result.code, 0, result.output);
+});
+
+for (const source of [
+  'const target = process.env.HEPH_RPC_TARGET ?? "http://127.0.0.1:8080"; void target;',
+  'const target = process.env["HEPH_RPC_TARGET"] || "http://127.0.0.1:8080"; void target;',
+  'process.env.HEPH_RPC_TARGET ??= "http://127.0.0.1:8080";',
+  'process.env.HEPH_RPC_TARGET ||= "http://127.0.0.1:8080";',
+  'const target = process.env.HEPH_RPC_TARGET ? process.env.HEPH_RPC_TARGET : "http://127.0.0.1:8080"; void target;',
+  'const { HEPH_RPC_TARGET = "http://127.0.0.1:8080" } = process.env; void HEPH_RPC_TARGET;',
+  'const target = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8080"; void target;',
+]) {
+  void test(`rejects implicit environment fallback: ${source}`, () => {
+    const result = lint("scripts/config.mjs", source);
+    assert.equal(result.code, 1, result.output);
+    assert.match(result.output, /no-env-defaults/);
+  });
+}
+
+void test("allows explicit environment validation and non-environment defaults", () => {
+  const result = lint(
+    "scripts/config.mjs",
+    `
+    const value = process.env.HEPH_RPC_TARGET;
+    if (value === undefined || value.trim() === "") throw new Error("HEPH_RPC_TARGET is required");
+    export const target = value;
+    export const count = new Map().get("counter") ?? 0;
+  `,
   );
   assert.equal(result.code, 0, result.output);
 });
