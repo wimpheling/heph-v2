@@ -1,6 +1,6 @@
 # Platform authorization
 
-Status: Plan for review. The feature is not complete.
+Status: Decisions approved. Implementation is pending. The feature is not complete.
 
 Keep the plan and the feature implementation in the same pull request.
 
@@ -97,7 +97,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Use Git ref scopes and separate actions for ref updates and repository settings.
 - [x] Add further scope boundaries when features require them, with explicit definitions and access tests.
 - [x] Use the Go error exceptions and domain rules below.
-- [ ] Confirm `AuthorizationService.ListGrants` as the first protected endpoint.
+- [x] Use `AuthorizationService.ListGrants` as the first protected endpoint.
 
 ## Confirmed actor reference
 
@@ -378,13 +378,12 @@ Refuse raw business comparisons, arithmetic, string calculations, loops, switche
 Keep computations in approved services outside the restricted domain packages.
 The analyzer implementation and its fixtures remain work to complete.
 
-## Proposed first protected endpoint
+## Confirmed first protected endpoint
 
 The existing `GetSystemInfo` endpoint is public.
 Add a protected endpoint to verify the complete authentication and authorization path.
-Confirm this endpoint before implementation.
 
-| Item            | Proposal                                                 |
+| Item            | Definition                                               |
 | --------------- | -------------------------------------------------------- |
 | RPC             | `AuthorizationService.ListGrants`                        |
 | Authentication  | `AUTHENTICATION_REQUIRED`                                |
@@ -553,17 +552,45 @@ Access tests must also check the permission decisions.
 - [ ] Run `pnpm check`, `pnpm test`, `pnpm test:e2e`, and `pnpm build`.
 - [ ] Update `README.md` and `AGENTS.md` to describe the implemented rules.
 
-## Completion conditions
+## Definition of done
 
-- The project Compose file starts a healthy PostgreSQL service.
-- Database migrations prepare the schema.
-- PostgreSQL stores actor references and permission data across restarts.
-- Every RPC endpoint has documentation, an access policy, and a domain handler.
-- Protected requests have a verified actor.
-- Guarded domain operations check access before they call private business handlers.
-- RPC callers and internal callers use the same authorization guard.
-- The custom analyzer enforces the endpoint and domain rules.
-- Tests cover allowed requests, refused requests, and failed permission checks.
-- All required checks pass.
+The pull request is complete only when all these conditions are true.
+Plan approval alone does not complete the feature.
+
+- A fresh checkout can start PostgreSQL with the project `compose.yaml` file.
+- Versioned migrations prepare an empty database without manual SQL changes.
+- Documented commands start, stop, migrate, and reset the local database.
+- Core PostgreSQL persistence stores actor references, scopes, and grants across restarts.
+- Bootstrap setup provides the initial scope and explicit grants needed to exercise `ListGrants`.
+- The bootstrap identity driver verifies its configured token and returns the correct stable actor reference.
+- Credentials stay outside Git; `.env.example` contains placeholders.
+- `GetSystemInfo` remains explicitly public and works without a credential.
+- `AuthorizationService.ListGrants` requires authentication and `authorization.grants.read` on the requested scope.
+- `ListGrants` returns paginated active grants attached directly to the authorized scope.
+- Missing credentials, invalid credentials, and insufficient permissions prevent the private handler from running.
+- Permission lookup failures also prevent the private handler from running.
+- Core implements the approved grant model, scope hierarchy, ownership rules, and exact action matching.
+- Access tests prove inherited access, scope isolation, Git ref boundaries, and removal of revoked access.
+- Every RPC has documented protobuf contracts, explicit access metadata, and one typed binding to a guarded domain operation.
+- Internal callers use the same guarded operations and pass the actor explicitly.
+- Generated Go bindings, TypeScript bindings, and the endpoint reference are current and committed.
+- The generated endpoint reference is outside `docs/`.
+- The custom Go analyzer enforces the approved domain, endpoint binding, and authorization guard rules.
+- Valid and invalid analyzer fixtures cover each rule, including aliases and attempted bypasses.
+- RPC integration tests use PostgreSQL and prove both allowed and refused requests.
+- `pnpm check`, `pnpm test`, `pnpm test:e2e`, and `pnpm build` pass, including the required CI checks.
+- `README.md` documents setup and how to call the protected endpoint.
+- `AGENTS.md` describes the implemented architecture and lint rules.
+- All completed work is committed and pushed to this feature PR.
+- The PR is ready for human review and remains unmerged.
+
+## Feature boundary
+
+This PR builds the platform authorization foundation and the first protected read endpoint.
+Git ref scopes are implemented and tested as authorization boundaries.
+Git push handling and live branch management are later features.
+Grant creation and revocation APIs require a separate policy decision.
+External identity providers, login screens, and session management are later features.
+Agent execution, chat, and the builder agent are later features.
 
 After the feature is complete, move this file to `plans/done/authorization.md`.
