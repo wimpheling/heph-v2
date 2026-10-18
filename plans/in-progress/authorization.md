@@ -26,18 +26,19 @@ The builder agent must use the same platform as other Heph agents.
 
 ## Terms
 
-| Term               | Meaning                                                                 |
-| ------------------ | ----------------------------------------------------------------------- |
-| Actor              | The human or agent that makes a request.                                |
-| Authentication     | The check that identifies the actor from a credential.                  |
-| Authorization      | The check that permits or refuses an action on a resource.              |
-| Scope              | An ownership boundary, such as a user, organization, or project.        |
-| Grant              | A record that permits an actor to do an action in a scope.              |
-| Domain handler     | The function that controls a business operation.                        |
-| Port               | A Go interface through which the domain requests an external operation. |
-| Driver             | The implementation of a port for a selected system.                     |
-| Endpoint binding   | The typed connection between an RPC method and its domain handler.      |
-| Database migration | A versioned change to the database schema.                              |
+| Term               | Meaning                                                                        |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Actor              | The human or agent that makes a request.                                       |
+| Authentication     | The check that identifies the actor from a credential.                         |
+| Authorization      | The check that permits or refuses an action on a resource.                     |
+| Scope              | An ownership boundary, such as a user, organization, or project.               |
+| Grant              | A record that permits an actor to do an action in a scope.                     |
+| Domain operation   | The guarded entry point that checks access before it calls a business handler. |
+| Domain handler     | The private function that runs the business logic after the access check.      |
+| Port               | A Go interface through which the domain requests an external operation.        |
+| Driver             | The implementation of a port for a selected system.                            |
+| Endpoint binding   | The typed connection between an RPC method and its guarded domain operation.   |
+| Database migration | A versioned change to the database schema.                                     |
 
 ## Proposed request path
 
@@ -45,18 +46,23 @@ The builder agent must use the same platform as other Heph agents.
 RPC endpoint
   -> authentication
   -> RPC adapter
-  -> domain handler
+  -> guarded domain operation
+  -> resolve resource or scope
   -> authorization check
+  -> private business handler
   -> approved services and ports
 ```
 
 The RPC adapter translates requests, results, and errors.
-The domain handler controls the business operation.
-The domain handler checks access before each protected action.
-A service can load resource data that the access check requires.
-Such data must not reach the caller before the check permits access.
+Each domain operation declares an authorization policy and a private business handler.
+The policy identifies the required action and resource or scope.
+The platform loads trusted resource data and checks access before it calls the business handler.
+Public operations require an explicit public policy.
+The platform refuses operations with missing or unknown policies.
+If the access check fails, the platform does not call the business handler.
+Do not return resource data before the access check permits access.
 
-Internal callers must use the same domain operations and access checks.
+RPC callers and internal callers must use the same guarded domain operations.
 
 ## Decisions to confirm
 
@@ -68,9 +74,9 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Use PostgreSQL for persistent identity and permission data.
 - [x] Add a project `compose.yaml` file for local PostgreSQL.
 - [x] Approve `internal/core/authorization` and the `authorization.GrantReader` interface as domain call targets.
-- [x] Bind each RPC to a domain function with typed Go references and input and output conversion functions.
+- [x] Bind each RPC to a guarded domain operation with typed Go references and input and output conversion functions.
 - [x] Use a protobuf method option with `AUTHENTICATION_PUBLIC`, `AUTHENTICATION_REQUIRED`, and `AUTHENTICATION_UNSPECIFIED` values.
-- [ ] Select a mandatory authorization guard for domain operations.
+- [x] Require an authorization guard before each private business handler, including operations called without RPC.
 - [ ] Use stable actor IDs for humans and agents.
 - [ ] Treat organizations as ownership scopes.
 - [ ] Pass the actor explicitly to domain operations.
@@ -119,11 +125,12 @@ After approval, mark the decision complete and explain the next decision.
 ### 3. Connect each endpoint to its domain handler
 
 - [ ] Add a typed endpoint binding.
+- [ ] Bind each RPC adapter to a guarded domain operation instead of its raw business handler.
 - [ ] Use actual Go function references instead of handler names stored as strings.
 - [ ] Add typed conversion functions for the RPC request and the domain result.
 - [ ] Require exactly one binding for each RPC method.
 - [ ] Use Go type checks to verify compatible binding types.
-- [ ] Move the system operation behind a domain handler.
+- [ ] Give the system operation an explicit public policy and a private domain handler.
 - [ ] Limit RPC adapters to authentication, data translation, delegation, and error translation.
 - [ ] Require endpoint registration through the platform.
 - [ ] Use only core types in the domain.
@@ -133,7 +140,7 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Define the actor type and the authentication interface.
 - [ ] Verify the credential before each protected RPC method.
 - [ ] Return an actor only after successful authentication.
-- [ ] Pass the verified actor from the RPC adapter to the domain handler.
+- [ ] Pass the verified actor from the RPC adapter to the guarded domain operation.
 - [ ] Refuse caller-supplied actor IDs as proof of identity.
 - [ ] Add the bootstrap identity driver.
 - [ ] Read bootstrap configuration through `internal/config`.
@@ -141,6 +148,12 @@ After approval, mark the decision complete and explain the next decision.
 ### 5. Check access in core
 
 - [ ] Define the action, resource, scope, and grant types.
+- [ ] Require a policy and a private business handler for each domain operation.
+- [ ] Require a resource resolver when the policy needs resource data.
+- [ ] Resolve resource data through trusted services instead of trusting caller-supplied ownership fields.
+- [ ] Run the access check before the business handler.
+- [ ] Reject operations with missing or unknown policies during platform registration.
+- [ ] Require an explicit policy for public operations.
 - [ ] Use the parent scope for an action that creates a resource.
 - [ ] Refuse access unless a defined rule permits the action.
 - [ ] Refuse unknown actions and unknown scopes.
@@ -157,8 +170,11 @@ Do not approve a call because its type name contains `Service`.
 
 - [ ] Require endpoint comments and explicit access policies.
 - [ ] Find missing, repeated, or invalid endpoint bindings.
-- [ ] Require each bound handler to belong to `internal/core/domain/` or one of its subpackages.
-- [ ] Find RPC adapters that bypass the domain handler.
+- [ ] Require each operation's business handler to belong to `internal/core/domain/` or one of its subpackages.
+- [ ] Require an explicit authorization policy for each domain operation.
+- [ ] Find RPC adapters that bypass the guarded domain operation.
+- [ ] Refuse raw handler references outside the approved operation definitions.
+- [ ] Refuse direct calls to raw business handlers in production code.
 - [ ] Find endpoint registrations that bypass platform authentication.
 - [ ] Permit domain calls only to approved services, ports, and explicit helpers.
 - [ ] Permit boolean decisions with `!`, `&&`, and `||`.
@@ -192,6 +208,9 @@ Access tests must also check the permission decisions.
 - [ ] Verify that an allowed actor can complete a protected action.
 - [ ] Verify that a denied actor cannot complete the action.
 - [ ] Verify that a permission error prevents the protected action.
+- [ ] Verify that a refused request never calls the business handler.
+- [ ] Verify that a failed access check never calls the business handler.
+- [ ] Verify that platform registration rejects operations without an explicit policy.
 - [ ] Verify that the caller cannot choose another actor through request data.
 - [ ] Verify that direct domain calls require the same access checks.
 - [ ] Verify that agents do not inherit their creator's credentials or rights automatically.
@@ -206,7 +225,8 @@ Access tests must also check the permission decisions.
 - PostgreSQL stores identity and permission data across restarts.
 - Every RPC endpoint has documentation, an access policy, and a domain handler.
 - Protected requests have a verified actor.
-- Protected actions have an access check inside the domain operation.
+- Guarded domain operations check access before they call private business handlers.
+- RPC callers and internal callers use the same authorization guard.
 - The custom analyzer enforces the endpoint and domain rules.
 - Tests cover allowed requests, refused requests, and failed permission checks.
 - All required checks pass.
