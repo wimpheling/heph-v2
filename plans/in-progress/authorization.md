@@ -83,7 +83,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Require an authorization guard before each private business handler, including operations called without RPC.
 - [x] Identify humans and agents with stable `ActorRef` values containing `Source` and `Subject`.
 - [x] Keep user account management in identity drivers, outside core.
-- [ ] Treat organizations as ownership scopes.
+- [x] Treat organizations as ownership scopes.
 - [ ] Pass the actor explicitly to domain operations.
 - [ ] Keep session IDs, credential IDs, and run IDs separate from actor IDs.
 - [ ] Keep the permission engine in core.
@@ -113,6 +113,15 @@ Core uses actor references for ownership and grants.
 Identity drivers manage accounts, profiles, login, and credentials.
 An identity driver can use local storage or an external identity provider.
 PostgreSQL storage does not require core to manage user accounts.
+
+## Confirmed organization model
+
+An organization is an ownership scope.
+It can own projects and resources.
+Humans and agents receive permissions within that scope.
+Each request retains the verified human or agent as its actor.
+For example, Alice creates a repository owned by Acme.
+The authorization check uses Alice's permissions within Acme.
 
 ## Work steps
 
