@@ -67,7 +67,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Use `internal/core/domain/` for the restricted domain handlers.
 - [x] Use PostgreSQL for persistent identity and permission data.
 - [x] Add a project `compose.yaml` file for local PostgreSQL.
-- [ ] Select the approved service packages and port interfaces.
+- [x] Approve `internal/core/authorization` and the `authorization.GrantReader` interface as domain call targets.
 - [ ] Select the typed form of the endpoint bindings.
 - [ ] Select the protobuf metadata for public access and required authentication.
 - [ ] Use stable actor IDs for humans and agents.
