@@ -88,7 +88,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Keep session IDs, credential IDs, and run IDs separate from actor references.
 - [x] Keep the permission engine in `internal/core/authorization`.
 - [x] Supply identity and permission data through injected interfaces.
-- [ ] Start with one configured bootstrap user and a bootstrap credential.
+- [x] Start with one configured bootstrap user and a bootstrap credential.
+- [ ] Put concrete drivers under `internal/drivers/`, with identity and PostgreSQL subpackages as proposed below.
 - [ ] Define ownership rights and explicit grants for the first access checks.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
@@ -166,6 +167,33 @@ Core must not import the driver implementations.
 Unit tests supply test doubles through the same interfaces.
 Do not add a dependency injection framework.
 
+## Confirmed bootstrap identity
+
+Start with one configured bootstrap user and a bearer token.
+The identity driver verifies the token and returns a stable bootstrap `ActorRef`.
+Read the configuration through `internal/config`.
+Keep the token outside Git.
+The bootstrap actor uses the same authorization guard as every other actor.
+Assign its permissions explicitly.
+
+## Proposed driver paths
+
+Confirm these paths before implementation.
+
+```text
+internal/
+  drivers/
+    identity/
+      bootstrap/    # Configured bootstrap identity and token verification.
+    postgres/       # PostgreSQL storage implementations, SQL, and migrations.
+```
+
+Keep concrete driver implementations outside `internal/core/`.
+Group identity drivers by implementation under `internal/drivers/identity/`.
+Keep PostgreSQL storage implementations under `internal/drivers/postgres/`.
+Use `internal/server/` to connect drivers to the interfaces during startup.
+Keep all drivers in the root Go module.
+
 ## Work steps
 
 ### 1. Set up PostgreSQL
@@ -183,6 +211,7 @@ Do not add a dependency injection framework.
 - [ ] Add versioned migrations for actor references and permission data.
 - [ ] Keep any local account storage inside the identity driver.
 - [ ] Keep SQL and PostgreSQL types inside the database drivers.
+- [ ] Use the approved driver paths for PostgreSQL storage and migrations.
 - [ ] Supply the database drivers through the core port interfaces.
 - [ ] Use PostgreSQL for the first bootstrap storage drivers.
 - [ ] Use test doubles for isolated unit tests.
@@ -227,6 +256,7 @@ Do not add a dependency injection framework.
 - [ ] Keep actor identity out of context values and global state.
 - [ ] Refuse caller-supplied actor IDs as proof of identity.
 - [ ] Add the bootstrap identity driver.
+- [ ] Use the approved driver path for the bootstrap identity implementation.
 - [ ] Read bootstrap configuration through `internal/config`.
 
 ### 5. Check access in core
