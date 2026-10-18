@@ -9,6 +9,7 @@ Keep the plan and the feature implementation in the same pull request.
 Require each RPC endpoint to have a documented contract and a domain handler.
 Identify each caller.
 Check access before each protected action.
+Store identity and permission data in PostgreSQL.
 
 Build the platform before the builder agent.
 The builder agent must use the same platform as other Heph agents.
@@ -25,17 +26,18 @@ The builder agent must use the same platform as other Heph agents.
 
 ## Terms
 
-| Term             | Meaning                                                                 |
-| ---------------- | ----------------------------------------------------------------------- |
-| Actor            | The human or agent that makes a request.                                |
-| Authentication   | The check that identifies the actor from a credential.                  |
-| Authorization    | The check that permits or refuses an action on a resource.              |
-| Scope            | An ownership boundary, such as a user, organization, or project.        |
-| Grant            | A record that permits an actor to do an action in a scope.              |
-| Domain handler   | The function that controls a business operation.                        |
-| Port             | A Go interface through which the domain requests an external operation. |
-| Driver           | The implementation of a port for a selected system.                     |
-| Endpoint binding | The typed connection between an RPC method and its domain handler.      |
+| Term               | Meaning                                                                 |
+| ------------------ | ----------------------------------------------------------------------- |
+| Actor              | The human or agent that makes a request.                                |
+| Authentication     | The check that identifies the actor from a credential.                  |
+| Authorization      | The check that permits or refuses an action on a resource.              |
+| Scope              | An ownership boundary, such as a user, organization, or project.        |
+| Grant              | A record that permits an actor to do an action in a scope.              |
+| Domain handler     | The function that controls a business operation.                        |
+| Port               | A Go interface through which the domain requests an external operation. |
+| Driver             | The implementation of a port for a selected system.                     |
+| Endpoint binding   | The typed connection between an RPC method and its domain handler.      |
+| Database migration | A versioned change to the database schema.                              |
 
 ## Proposed request path
 
@@ -63,6 +65,8 @@ Review one decision at a time.
 After approval, mark the decision complete and explain the next decision.
 
 - [x] Use `internal/core/domain/` for the restricted domain handlers.
+- [x] Use PostgreSQL for persistent identity and permission data.
+- [x] Add a project `compose.yaml` file for local PostgreSQL.
 - [ ] Select the approved service packages and port interfaces.
 - [ ] Select the typed form of the endpoint bindings.
 - [ ] Select the protobuf metadata for public access and required authentication.
@@ -73,13 +77,35 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Keep the permission engine in core.
 - [ ] Supply identity and permission data through injected interfaces.
 - [ ] Start with one configured bootstrap user and a bootstrap credential.
-- [ ] Use memory storage for the first bootstrap drivers.
 - [ ] Define ownership rights and explicit grants for the first access checks.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
 ## Work steps
 
-### 1. Define and document the endpoint contract
+### 1. Set up PostgreSQL
+
+- [ ] Add a PostgreSQL service to the root `compose.yaml` file.
+- [ ] Pin the PostgreSQL version.
+- [ ] Bind the local database port to `127.0.0.1`.
+- [ ] Add a named volume to keep data across container restarts.
+- [ ] Add a database health check.
+- [ ] Wait for database readiness before migrations and application startup.
+- [ ] Add `.env.example` with local database settings and placeholder credentials.
+- [ ] Read the application database connection settings through `internal/config`.
+- [ ] Create the database connection pool during platform startup.
+- [ ] Close the database connection pool during shutdown.
+- [ ] Add versioned migrations for identity and permission data.
+- [ ] Keep SQL and PostgreSQL types inside the database drivers.
+- [ ] Supply the database drivers through the core port interfaces.
+- [ ] Use PostgreSQL for the first bootstrap storage drivers.
+- [ ] Use test doubles for isolated unit tests.
+- [ ] Add commands to start, stop, migrate, and reset the local database.
+- [ ] Document how the Go application receives the database connection settings.
+- [ ] Use the same PostgreSQL version for local development and CI.
+- [ ] Prepare a separate database or schema for each integration test run.
+- [ ] Prepare the database for integration tests and browser tests.
+
+### 2. Define and document the endpoint contract
 
 - [ ] Add comments for each RPC method and its request and response fields.
 - [ ] Describe the purpose, inputs, outputs, and expected errors.
@@ -89,7 +115,7 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Generate an endpoint reference from the protobuf contract.
 - [ ] Put the generated reference outside `docs/`.
 
-### 2. Connect each endpoint to its domain handler
+### 3. Connect each endpoint to its domain handler
 
 - [ ] Add a typed endpoint binding.
 - [ ] Require exactly one binding for each RPC method.
@@ -99,7 +125,7 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Require endpoint registration through the platform.
 - [ ] Use only core types in the domain.
 
-### 3. Identify the caller
+### 4. Identify the caller
 
 - [ ] Define the actor type and the authentication interface.
 - [ ] Verify the credential before each protected RPC method.
@@ -109,7 +135,7 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Add the bootstrap identity driver.
 - [ ] Read bootstrap configuration through `internal/config`.
 
-### 4. Check access in core
+### 5. Check access in core
 
 - [ ] Define the action, resource, scope, and grant types.
 - [ ] Use the parent scope for an action that creates a resource.
@@ -121,7 +147,7 @@ After approval, mark the decision complete and explain the next decision.
 - [ ] Map authentication and permission errors at the RPC boundary.
 - [ ] Check delegated rights before a future operation issues an agent credential.
 
-### 5. Enforce the rules with the custom Go analyzer
+### 6. Enforce the rules with the custom Go analyzer
 
 Use resolved Go symbols and receiver types.
 Do not approve a call because its type name contains `Service`.
@@ -150,8 +176,12 @@ Do not approve a call because its type name contains `Service`.
 The analyzer checks code structure.
 Access tests must also check the permission decisions.
 
-### 6. Verify the complete request path
+### 7. Verify the complete request path
 
+- [ ] Verify that the Compose service becomes healthy.
+- [ ] Verify that migrations prepare an empty database.
+- [ ] Verify that identity and permission data survive application and database restarts.
+- [ ] Verify that database errors prevent protected actions.
 - [ ] Verify that the public system endpoint works without a credential.
 - [ ] Verify that a protected endpoint refuses missing and invalid credentials.
 - [ ] Verify that a valid credential produces the correct actor.
@@ -167,6 +197,9 @@ Access tests must also check the permission decisions.
 
 ## Completion conditions
 
+- The project Compose file starts a healthy PostgreSQL service.
+- Database migrations prepare the schema.
+- PostgreSQL stores identity and permission data across restarts.
 - Every RPC endpoint has documentation, an access policy, and a domain handler.
 - Protected requests have a verified actor.
 - Protected actions have an access check inside the domain operation.
