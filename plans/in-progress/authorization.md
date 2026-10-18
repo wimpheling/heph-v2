@@ -69,7 +69,8 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Add a project `compose.yaml` file for local PostgreSQL.
 - [x] Approve `internal/core/authorization` and the `authorization.GrantReader` interface as domain call targets.
 - [x] Bind each RPC to a domain function with typed Go references and input and output conversion functions.
-- [ ] Select the protobuf metadata for public access and required authentication.
+- [x] Use a protobuf method option with `AUTHENTICATION_PUBLIC`, `AUTHENTICATION_REQUIRED`, and `AUTHENTICATION_UNSPECIFIED` values.
+- [ ] Select a mandatory authorization guard for domain operations.
 - [ ] Use stable actor IDs for humans and agents.
 - [ ] Treat organizations as ownership scopes.
 - [ ] Pass the actor explicitly to domain operations.
