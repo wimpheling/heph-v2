@@ -94,6 +94,7 @@ After approval, mark the decision complete and explain the next decision.
 - [x] Use ownership rights and explicit grants for the first access checks.
 - [x] Use the grant record fields defined below.
 - [ ] Confirm the scope kinds, parent relationships, and grant coverage proposed below.
+- [ ] Confirm Git ref scopes and separate actions for ref updates and repository settings.
 - [ ] Confirm the Go error exceptions and the domain rules below.
 
 ## Confirmed actor reference
@@ -276,6 +277,7 @@ const (
     ScopeOrganization ScopeKind = "organization"
     ScopeProject      ScopeKind = "project"
     ScopeResource     ScopeKind = "resource"
+    ScopeGitRef       ScopeKind = "git_ref"
 )
 
 type Scope struct {
@@ -291,6 +293,7 @@ type Scope struct {
 | Organization | Resources owned by one organization.                       | Platform.                           |
 | Project      | A project and its resources.                               | Personal or organization.           |
 | Resource     | One resource, such as a repository or secret.              | Personal, organization, or project. |
+| Git ref      | One named Git ref within a repository.                     | The repository's resource scope.    |
 
 ```text
 platform
@@ -301,6 +304,8 @@ platform
   organization:acme
     project:heph
       resource:repository-b
+        git_ref:refs/heads/main
+        git_ref:refs/heads/agents/builder
 ```
 
 The labels in this example describe the scopes; stored references use stable internal IDs.
@@ -319,8 +324,39 @@ A grant applies to its named scope and all descendants, for its exact action.
 It does not apply to ancestors or siblings.
 A grant at platform scope covers the installation and must be assigned explicitly.
 For a resource action, resolve the existing resource's scope and its ancestors.
-For resource creation, check the intended parent scope before creating the resource.
+For resource creation, check the intended parent scope and any target-specific policy before creating the resource.
 Moving a resource changes its inherited access and needs a separate authorized operation.
+
+## Proposed permissions for Git refs
+
+Treat each branch as a Git ref scope beneath its repository scope.
+Identify the target with the repository's stable ID and the full Git ref name.
+For example, use `refs/heads/main` and `refs/heads/agents/builder`.
+The core resolver maps this target to its scope and trusted ancestors.
+Do not require a live branch before an exact ref scope can be registered.
+The scope identifies the ref name within that repository, including after deletion and recreation.
+
+Use an exact action such as `git.ref.update` for an ordinary branch update.
+Use separate actions for ref creation, ref deletion, forced updates, and repository settings.
+Define each action's exact meaning before implementing its Git operation.
+A ref update grant does not permit changing repository settings.
+
+| Grant scope      | Coverage for `git.ref.update`         |
+| ---------------- | ------------------------------------- |
+| Repository       | All refs in that repository.          |
+| One Git ref      | Only that ref within that repository. |
+| Several Git refs | One grant for each selected ref.      |
+
+A branch-limited agent must not receive broader grants for the same action.
+Narrow grants add access; they do not remove inherited or ownership rights.
+Protected branch rules would be a separate restrictive policy.
+Confirm that policy before implementing protected branches.
+
+The Git mutation path must check every affected ref before it changes any ref.
+Ref creation must check the intended ref target, including any required parent-scope permission.
+This plan defines the authorization model and its unit fixtures.
+It does not implement Git pushes or branch management in the first platform feature.
+Branch name patterns remain a separate decision; start with exact ref names.
 
 ## Work steps
 
@@ -392,6 +428,7 @@ Moving a resource changes its inherited access and needs a separate authorized o
 - [ ] Define the action, resource, scope, and grant types.
 - [ ] Implement the approved grant record and validate its fields.
 - [ ] Implement the approved scope kinds and validate parent relationships.
+- [ ] Add authorization fixtures for exact Git ref scopes beneath repository scopes.
 - [ ] Resolve grant scope coverage through trusted resource containment.
 - [ ] Require a policy and a private business handler for each domain operation.
 - [ ] Require a resource resolver when the policy needs resource data.
@@ -456,6 +493,9 @@ Access tests must also check the permission decisions.
 - [ ] Verify that grants cover contained resources and exclude unrelated scopes.
 - [ ] Verify that scope grants do not apply to ancestors or sibling scopes.
 - [ ] Verify that invalid scope relationships prevent protected actions.
+- [ ] Verify that a Git ref grant excludes other refs and repositories.
+- [ ] Verify that a ref update grant does not permit repository settings changes.
+- [ ] Verify that narrow grants do not cancel broader grants.
 - [ ] Verify that a revoked grant cannot permit subsequent access checks.
 - [ ] Verify that a permission error prevents the protected action.
 - [ ] Verify that a refused request never calls the business handler.
