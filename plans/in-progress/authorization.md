@@ -76,6 +76,7 @@ After approval, mark the decision complete and explain the next decision.
 
 - [x] Use `internal/core/domain/` and all its subpackages for the restricted domain handlers.
 - [x] Use PostgreSQL for persistent identity and permission data.
+- [x] Make PostgreSQL an opinionated core dependency, with storage code in `internal/core/postgres/`.
 - [x] Add a project `compose.yaml` file for local PostgreSQL.
 - [x] Approve `internal/core/authorization` and the `authorization.GrantReader` interface as domain call targets.
 - [x] Bind each RPC to a guarded domain operation with typed Go references and input and output conversion functions.
@@ -151,7 +152,7 @@ This decision does not add session management or agent execution to this feature
 
 Keep permission rules in `internal/core/authorization`.
 The engine evaluates ownership, grants, actions, and scopes to permit or refuse access.
-Drivers supply the required data through interfaces.
+Identity drivers and core persistence supply the required data through interfaces.
 The guarded domain operation calls the engine before its private business handler.
 RPC callers and internal callers use the same rules.
 Keep HTTP, ConnectRPC, generated transport types, SQL, and PostgreSQL types outside the permission engine.
@@ -161,9 +162,9 @@ Test permission decisions without a database.
 
 Use an authentication interface to verify credentials and return the actor.
 Use `authorization.GrantReader` to load grants for permission checks.
-At startup, supply the configured identity driver and PostgreSQL grant driver through ordinary Go constructors.
-Core depends on the interfaces and core types.
-Core must not import the driver implementations.
+At startup, supply the configured identity driver and core PostgreSQL grant implementation through ordinary Go constructors.
+The permission engine depends on interfaces and core types.
+Core must not import replaceable implementations under `internal/drivers/`.
 Unit tests supply test doubles through the same interfaces.
 Do not add a dependency injection framework.
 
@@ -176,24 +177,29 @@ Keep the token outside Git.
 The bootstrap actor uses the same authorization guard as every other actor.
 Assign its permissions explicitly.
 
-## Confirmed driver paths
+## Confirmed persistence and driver paths
 
 ```text
 internal/
+  core/
+    postgres/       # Core PostgreSQL storage, SQL, and migrations.
   drivers/
     bootstrap/
       identity/     # Configured bootstrap identity and token verification.
-    std/
-      postgres/     # PostgreSQL storage implementations, SQL, and migrations.
+    std/            # Standard implementations of replaceable components.
 ```
 
-Keep concrete driver implementations outside `internal/core/`.
+PostgreSQL is an opinionated core choice.
+Keep PostgreSQL storage, SQL, and migrations in `internal/core/postgres/`.
+Keep the permission engine independent of SQL and PostgreSQL types.
+Use interfaces to test business rules without a database.
+These interfaces do not require support for other database engines.
+Keep replaceable component implementations outside `internal/core/`.
 Put simplified bootstrap drivers under `internal/drivers/bootstrap/`.
 Put standard drivers under `internal/drivers/std/`.
 Use `internal/drivers/bootstrap/identity/` for the first identity driver.
-Use `internal/drivers/std/postgres/` for PostgreSQL storage, SQL, and migrations.
-Use `internal/server/` to connect drivers to the interfaces during startup.
-Keep all drivers in the root Go module.
+Use `internal/server/` to connect core persistence and replaceable drivers to their interfaces during startup.
+Keep these packages in the root Go module.
 
 ## Work steps
 
@@ -211,10 +217,10 @@ Keep all drivers in the root Go module.
 - [ ] Close the database connection pool during shutdown.
 - [ ] Add versioned migrations for actor references and permission data.
 - [ ] Keep any local account storage inside the identity driver.
-- [ ] Keep SQL and PostgreSQL types inside the database drivers.
-- [ ] Put PostgreSQL storage and migrations in `internal/drivers/std/postgres/`.
-- [ ] Supply the database drivers through the core port interfaces.
-- [ ] Use PostgreSQL for the first bootstrap storage drivers.
+- [ ] Keep SQL and PostgreSQL types inside `internal/core/postgres/`.
+- [ ] Put PostgreSQL storage and migrations in `internal/core/postgres/`.
+- [ ] Supply core persistence through the interfaces used by the business services.
+- [ ] Use core PostgreSQL persistence with the bootstrap identity driver.
 - [ ] Use test doubles for isolated unit tests.
 - [ ] Add commands to start, stop, migrate, and reset the local database.
 - [ ] Document how the Go application receives the database connection settings.
